@@ -16,6 +16,7 @@ set(SAMPLES_USED_PCL
     )
 
 set(TARGET_LIB tycam)
+set(INCLUDE_PATH ../include)
 
 # ========================================
 # === common, pcl is too slow, so build a
@@ -26,6 +27,7 @@ set(COMMON_SOURCES
     )
 
 add_library(sample_common STATIC ${COMMON_SOURCES})
+include_directories(${INCLUDE_PATH})
 
 
 # ========================================
