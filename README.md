@@ -39,8 +39,8 @@ Then run the following commands to compile in sample directory
 
     1、mkdir build
     2、cd build
-    1、cmake ..
-    2、make
+    3、cmake ..
+    4、make
 
 Finally, all executables generated in bin directory
 
@@ -53,7 +53,7 @@ First install driver in host side which located in lib/win/driver,
 
 Second, copy the tycam.dll for target platform to the directory which in system environment variable.
 
-Then generate .sln, .vcxproj files using cmake tools.
+Then generate .sln, .vcxproj files using cmake tools and copy the tycam.lib for target platform to the build directory.
 
 Finally, open .sln file with visual studio to compile and debug.
 

@@ -4,6 +4,7 @@ set(ALL_SAMPLES
     RGBAnalysis
     SimpleView_Callback
     SimpleView_FetchFrame
+    SimpleView_Registration
     SimpleView_TriggerMode
     TransThrough
     DumpAllFeatures
@@ -29,7 +30,6 @@ set(COMMON_SOURCES
 add_library(sample_common STATIC ${COMMON_SOURCES})
 include_directories(${INCLUDE_PATH})
 
-
 # ========================================
 # === OpenCV
 # ========================================
@@ -45,17 +45,6 @@ else()
     # link_directories(${OpenCV_LIB_DIR_OPT})
     # endif()
     link_directories(${OpenCV_LIB_DIR})
-endif()
-
-# ========================================
-# === usb
-# ========================================
-if (MSVC)
-    if(CMAKE_CL_64) 
-        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src/cyusb/CyAPI/lib/x64)
-    else()
-        link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../src/cyusb/CyAPI/lib/x86)
-    endif()
 endif()
 
 # ========================================
@@ -80,11 +69,6 @@ foreach(sample ${ALL_SAMPLES})
     add_executable(${sample} ${sources})
     add_dependencies(${sample} sample_common ${TARGET_LIB})
     target_link_libraries(${sample} sample_common ${TARGET_LIB} ${OpenCV_LIBS} ${PCL_LIBRARIES})
-    if (MSVC)
-        target_link_libraries(${sample} CyAPI)
-    elseif (UNIX)
-        target_link_libraries(${sample} usb-1.0 m)
-    endif()
     set_target_properties(${sample} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/)
     # install(TARGETS ${sample} RUNTIME DESTINATION samples/)
 endforeach()

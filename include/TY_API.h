@@ -176,9 +176,9 @@ typedef int32_t TY_FEATURE_TYPE;
 typedef enum TY_FEATURE_ID_LIST
 {
     TY_STRUCT_CAM_INTRINSIC         = 0x000 | TY_FEATURE_STRUCT, ///< see TY_CAMERA_INTRINSIC
-    TY_STRUCT_EXTRINSIC_TO_LEFT_IR  = 0x001 | TY_FEATURE_STRUCT, ///< extrinsic from right IR to left IR, see TY_CAMERA_EXTRINSIC
-    TY_STRUCT_EXTRINSIC_TO_LEFT_RGB = 0x002 | TY_FEATURE_STRUCT, ///< extrinsic from RGB to left IR, see TY_CAMERA_EXTRINSIC
-    TY_STRUCT_NET_INFO              = 0x003 | TY_FEATURE_STRUCT, ///< see TY_DEVICE_NET_INFO
+    TY_STRUCT_EXTRINSIC_TO_LEFT_IR  = 0x001 | TY_FEATURE_STRUCT, ///< extrinsic from current component to left IR, see TY_CAMERA_EXTRINSIC
+    TY_STRUCT_EXTRINSIC_TO_LEFT_RGB = 0x002 | TY_FEATURE_STRUCT, ///< extrinsic from current component to left RGB, see TY_CAMERA_EXTRINSIC
+    TY_STRUCT_NET_INFO              = 0x005 | TY_FEATURE_STRUCT, ///< see TY_DEVICE_NET_INFO
 
     TY_INT_WIDTH_MAX            = 0x100 | TY_FEATURE_INT,
     TY_INT_HEIGHT_MAX           = 0x101 | TY_FEATURE_INT,
@@ -424,6 +424,13 @@ static inline int32_t TYPixelType(TY_PIXEL_FORMAT pixelFormat)
 //  C API
 //------------------------------------------------------------------------------
 #define TY_CAPI TY_EXTC TY_EXPORT TY_STATUS TY_STDC
+
+
+/// @brief Get error information.
+/// @param  [in]  errorID       Error id.
+/// @return Error string.
+TY_EXTC TY_EXPORT const char* TY_STDC TYErrorString (TY_STATUS errorID);
+
 
 /// @brief Init this library.
 ///
@@ -891,7 +898,8 @@ TY_CAPI TYSetStruct               (TY_DEV_HANDLE hDevice, TY_COMPONENT_ID compon
 /// @retval TY_STATUS_OK        Succeed.
 /// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
 /// @retval TY_STATUS_NULL_POINTER      pDepth or pWorld is NULL.
-TY_CAPI TYDepthToWorld            (TY_DEV_HANDLE hDevice, TY_VECT_3F* depth, TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount);
+/// @retval TY_STATUS_INVALID_PARAMETER worldPaddingBytes is not 4x.
+TY_CAPI TYDepthToWorld            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* depth, TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount);
 
 /// @brief Convert world coordinate to depth coordinate.
 /// format of depth data should be:
@@ -912,13 +920,8 @@ TY_CAPI TYDepthToWorld            (TY_DEV_HANDLE hDevice, TY_VECT_3F* depth, TY_
 /// @retval TY_STATUS_OK        Succeed.
 /// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
 /// @retval TY_STATUS_NULL_POINTER      pDepth or pWorld is NULL.
-TY_CAPI TYWorldToDepth            (TY_DEV_HANDLE hDevice, TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
-
-
-/// @brief Get error information.
-/// @param  [in]  errorID       Error id.
-/// @return Error string.
-TY_EXTC TY_EXPORT const char* TY_STDC TYErrorString (TY_STATUS errorID);
+/// @retval TY_STATUS_INVALID_PARAMETER worldPaddingBytes is not 4x.
+TY_CAPI TYWorldToDepth            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
 
 
 //------------------------------------------------------------------------------
@@ -987,8 +990,9 @@ TY_CAPI             TYGetStruct               (TY_DEV_HANDLE hDevice, TY_COMPONE
 TY_CAPI             TYSetStruct               (TY_DEV_HANDLE hDevice, TY_COMPONENT_ID componentID, TY_FEATURE_ID featureID, void* pStruct, int32_t structSize);
 
 // utils api
-TY_CAPI             TYDepthToWorld            (TY_DEV_HANDLE hDevice, TY_VECT_3F* depth, TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount);
-TY_CAPI             TYWorldToDepth            (TY_DEV_HANDLE hDevice, TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
+TY_CAPI             TYDepthToWorld            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* depth, TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount);
+TY_CAPI             TYWorldToDepth            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
 
+TY_CAPI             TYRegisterWorldToColor    (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount, uint16_t* outDepthBuffer, int32_t bufferSize);
 
 #endif // TY_API_H_

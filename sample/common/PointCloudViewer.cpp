@@ -68,6 +68,8 @@ public:
         if(reset_view){
             it->second->runOnVisualizationThreadOnce(viewerOneOff);
         }
+#else
+        LOGE("No lib PCL found");
 #endif // HAVE_PCL
     }
 
@@ -78,6 +80,8 @@ public:
 #ifdef HAVE_PCL
         std::map<std::string, pcl::visualization::CloudViewer*>::iterator it = m_viewerMap.find(windowName);
         ret = it->second->wasStopped(0);
+#else
+        LOGE("No lib PCL found");
 #endif // HAVE_PCL
         return ret;
     }
