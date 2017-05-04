@@ -54,6 +54,7 @@ static ImageBuffer::PixelTypes TY_PIXEL_TO_OLD_PIXEL(int32_t tyPixelType)
     switch(tyPixelType){
         case TY_PIXEL_FORMAT_MONO: return ImageBuffer::PIX_8C1;
         case TY_PIXEL_FORMAT_RGB: return ImageBuffer::PIX_8C3;
+        case TY_PIXEL_FORMAT_YUV422: return ImageBuffer::PIX_8C2;
         case TY_PIXEL_FORMAT_DEPTH16: return ImageBuffer::PIX_16C1;
         case TY_PIXEL_FORMAT_FPOINT3D: return ImageBuffer::PIX_32FC3;
         default: return (ImageBuffer::PixelTypes)-1;
@@ -72,9 +73,17 @@ public:
     {
         TY_CAMERA_INTRINSIC intr;
         int32_t w, h;
-        assert_ok(TYGetStruct(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_STRUCT_CAM_INTRINSIC, &intr, sizeof(intr)));
-        assert_ok(TYGetInt(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_INT_WIDTH, &w));
-        assert_ok(TYGetInt(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_INT_HEIGHT, &h));
+        m_oldIntrinsic.width = 0;
+        m_oldIntrinsic.height = 0;
+        if (TYGetStruct(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_STRUCT_CAM_INTRINSIC, &intr, sizeof(intr)) != TY_STATUS_OK){
+            return;
+        }
+        if (TYGetInt(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_INT_WIDTH, &w) != TY_STATUS_OK){
+            return;
+        }
+        if (TYGetInt(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_INT_HEIGHT, &h) != TY_STATUS_OK){
+            return;
+        }
         m_oldIntrinsic.width = w;
         m_oldIntrinsic.height = h;
         memcpy(m_oldIntrinsic.data, intr.data, sizeof(intr));
@@ -157,11 +166,11 @@ public:
           , m_userdata(NULL)
     {
         m_frame.userBuffer = NULL;
-        TYInitLib();
+        //TYInitLib();
         updateCamList();
     }
 
-    ~CameraVideoSourceWrapper(){}
+    ~CameraVideoSourceWrapper(){  }
 
     int GetDeviceNum()
     {
@@ -400,6 +409,9 @@ public:
                 assert(size == sizeof(int));
                 int mode = *(int*)data;
                 switch(mode){
+                    case RESO_MODE_320x240:
+                        assert_ok(TYSetEnum(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_320x240));
+                        return CAMSTATUS_SUCCESS;
                     case RESO_MODE_640x480:
                         assert_ok(TYSetEnum(m_hDevice, TY_COMPONENT_DEPTH_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480));
                         return CAMSTATUS_SUCCESS;
@@ -510,7 +522,13 @@ public:
     void updateCamList()
     {
         int32_t n;
-        assert_ok(TYGetDeviceNumber(&n));
+        TY_STATUS ss= TYGetDeviceNumber(&n);
+        if (ss == TY_STATUS_NOT_INITED){
+            printf("***** library not inited ,call TYInitLib first ****\n");
+            printf("***** call TYDeInitLib before exit ****\n");
+            assert(0);
+            return;
+        }
         if (n != 0){
           m_devInfos.resize(n);
         }

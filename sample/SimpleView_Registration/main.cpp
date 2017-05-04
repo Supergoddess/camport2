@@ -5,11 +5,12 @@ static int  n;
 static volatile bool exit_main;
 static volatile bool save_frame;
 
-
 struct CallbackData {
     int             index;
     TY_DEV_HANDLE   hDevice;
     DepthRender*    render;
+    cv::Mat         colorM;
+    cv::Mat         colorD;
 };
 
 void frameCallback(TY_FRAME_DATA* frame, void* userdata)
@@ -17,11 +18,11 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    cv::Mat point3D, color;
+    cv::Mat depth, point3D, color;
     for( int i = 0; i < frame->validCount; i++ ){
         // get & show depth image
         if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
+            depth = cv::Mat(frame->image[i].height, frame->image[i].width
                     , CV_16U, frame->image[i].buffer);
             cv::Mat colorDepth = pData->render->Compute(depth);
             cv::imshow("ColorDepth", colorDepth);
@@ -45,10 +46,33 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
         }
         // get & show RGB
         if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            color = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_8UC3, frame->image[i].buffer);
-            cv::cvtColor(color, color, cv::COLOR_RGB2BGR);
-            cv::imshow("color", color);
+            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
+                cv::Mat yuv(frame->image[i].height, frame->image[i].width
+                            , CV_8UC2, frame->image[i].buffer);
+                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
+            } else {
+                color = cv::Mat(frame->image[i].height, frame->image[i].width
+                        , CV_8UC3, frame->image[i].buffer);
+                cv::cvtColor(color, color, cv::COLOR_RGB2BGR);
+            }
+
+            if(!pData->colorD.empty() && !pData->colorM.empty()){
+                cv::Mat u;
+                cv::undistort(color, u, pData->colorM, pData->colorD, pData->colorM);
+                // cv::fisheye::undistortImage(color, color, pData->colorM, pData->colorD, pData->colorM, color.size());
+                color = u;
+            }
+            cv::Mat resizedColor;
+            cv::Size size;
+            if(!depth.empty()){
+                size = depth.size();
+            } else if(!point3D.empty()){
+                size = point3D.size();
+            } else {
+                size = color.size();
+            }
+            cv::resize(color, resizedColor, size, 0, 0, CV_INTER_LINEAR);
+            cv::imshow("color", resizedColor);
         }
     }
 
@@ -63,6 +87,7 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
 
         depthColor = depthColor / 2 + color / 2;
 
+        cv::resize(depthColor, depthColor, depth.size());
         cv::imshow("projected depth", depthColor);
     }
 
@@ -94,10 +119,13 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
 int main(int argc, char* argv[])
 {
     const char* IP = NULL;
+    const char* ID = NULL;
     TY_DEV_HANDLE hDevice;
 
     for(int i = 1; i < argc; i++){
-        if(strcmp(argv[i], "-ip") == 0){
+        if(strcmp(argv[i], "-id") == 0){
+            ID = argv[++i];
+        }else if(strcmp(argv[i], "-ip") == 0){
             IP = argv[++i];
         }else if(strcmp(argv[i], "-h") == 0){
             LOGI("Usage: SimpleView_Callback [-h] [-ip <IP>]");
@@ -115,20 +143,23 @@ int main(int argc, char* argv[])
         LOGD("=== Open device %s", IP);
         ASSERT_OK( TYOpenDeviceWithIP(IP, &hDevice) );
     } else {
-        LOGD("=== Get device info");
-        ASSERT_OK( TYGetDeviceNumber(&n) );
-        LOGD("     - device number %d", n);
+        if(ID == NULL){
+            LOGD("=== Get device info");
+            ASSERT_OK( TYGetDeviceNumber(&n) );
+            LOGD("     - device number %d", n);
 
-        TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
-        ASSERT_OK( TYGetDeviceList(pBaseInfo, 100, &n) );
+            TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
+            ASSERT_OK( TYGetDeviceList(pBaseInfo, 100, &n) );
 
-        if(n == 0){
-            LOGD("=== No device got");
-            return -1;
+            if(n == 0){
+                LOGD("=== No device got");
+                return -1;
+            }
+            ID = pBaseInfo[0].id;
         }
 
-        LOGD("=== Open device 0");
-        ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
+        LOGD("=== Open device: %s", ID);
+        ASSERT_OK( TYOpenDevice(ID, &hDevice) );
     }
 
     int32_t allComps;
@@ -172,6 +203,24 @@ int main(int argc, char* argv[])
 
     LOGD("=== Start capture");
     ASSERT_OK( TYStartCapture(hDevice) );
+
+    LOGD("=== Read color rectify matrix");
+    {
+        TY_CAMERA_INTRINSIC intri;
+        TY_CAMERA_DISTORTION dist;
+        int err = TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_DISTORTION, &dist, sizeof(dist));
+        if( err != TY_STATUS_OK )
+        {
+            LOGW("get color distortion failed: %s", TYErrorString(err));
+        } else {
+            ASSERT_OK( TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_INTRINSIC, &intri, sizeof(intri)) );
+            cb_data.colorM = cv::Mat(3, 3, CV_64F);
+            for(int i = 0; i < 9; i++) cb_data.colorM.at<double>(i) = intri.data[i];
+            cb_data.colorD = cv::Mat(1, 12, CV_64F);
+            for(int i = 0; i < 12; i++) cb_data.colorD.at<double>(i) = dist.data[i];
+            cb_data.colorD = cb_data.colorD.colRange(0, 8);
+        }
+    }
 
     LOGD("=== Wait for callback");
     exit_main = false;

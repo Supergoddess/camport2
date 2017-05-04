@@ -107,6 +107,7 @@ struct ImageBuffer {
     PIX_16C1 = 2,
     PIX_32C1 = 3,
     PIX_32FC3 = 4,
+    PIX_8C2  = 5,
   };
 
   int width; /**< width of the image buffer*/
@@ -165,6 +166,9 @@ struct ImageBuffer {
     switch (type) {
     case percipio::ImageBuffer::PIX_8C1:
       return 1;
+      break;
+    case percipio::ImageBuffer::PIX_8C2:
+      return 2;
       break;
     case percipio::ImageBuffer::PIX_8C3:
       return 3;
@@ -435,6 +439,8 @@ class DepthCameraDevice {
    */
   DepthCameraDevice(HardwareModel model = MODEL_DPB04GN) {
     assert(LibVersion() == PERCIPIO_CAMPORT_LIB_BUILD_VERSION);
+    printf(" %s DepthCameraDevice class is NOT Recommended to use in New Proejct\n", __FILE__);
+    printf("this is provided only for old generation products \n");
     _source = CreateSource(model);
   }
 
@@ -455,14 +461,16 @@ class DepthCameraDevice {
       ReleaseSource(_source);
       _source = NULL;
     }
-    _source = CreateSource(model);
   }
 
   /**
    * @brief get ICameraVideoSource interface related to this camera device.
    * @see function Create().
    */
-  ICameraVideoSource * get_source() const {
+  ICameraVideoSource * get_source() {
+      if (!_source){
+          Create();
+      }
     return _source;
   }
 

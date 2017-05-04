@@ -9,6 +9,8 @@ struct CallbackData {
     int             index;
     TY_DEV_HANDLE   hDevice;
     DepthRender*    render;
+    bool            saveFrame;
+    int             saveIdx;
 };
 
 void frameCallback(TY_FRAME_DATA* frame, void* userdata)
@@ -16,26 +18,33 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
+    cv::Mat depth, leftIR, rightIR, color;
     for( int i = 0; i < frame->validCount; i++ ){
         // get & show depth image
         if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
+            depth = cv::Mat(frame->image[i].height, frame->image[i].width
                     , CV_16U, frame->image[i].buffer);
             cv::Mat colorDepth = pData->render->Compute(depth);
+            {
+                std::stringstream ss;
+                ss << "center depth: " << depth.at<uint16_t>(depth.rows/2, depth.cols/2);
+                putText(colorDepth, ss.str(), cv::Point(0,25), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0), 2);
+            }
             cv::imshow("ColorDepth", colorDepth);
         }
         // get & show left ir image
         if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
+            leftIR = cv::Mat(frame->image[i].height, frame->image[i].width
                     , CV_8U, frame->image[i].buffer);
             cv::imshow("LeftIR", leftIR);
         }
         // get & show right ir image
         if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
+            rightIR = cv::Mat(frame->image[i].height, frame->image[i].width
                     , CV_8U, frame->image[i].buffer);
             cv::imshow("RightIR", rightIR);
         }
+        // get & show left ir image
         // get point3D
         if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
             cv::Mat point3D(frame->image[i].height, frame->image[i].width
@@ -43,11 +52,18 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
         }
         // get & show RGB
         if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                    , CV_8UC3, frame->image[i].buffer);
-            cv::Mat bgr;
-            cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
-            cv::imshow("bgr", bgr);
+            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
+                LOGD("Color format TY_PIXEL_FORMAT_YUV422");
+                cv::Mat yuv(frame->image[i].height, frame->image[i].width
+                            , CV_8UC2, frame->image[i].buffer);
+                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
+            } else {
+                LOGD("Color format TY_PIXEL_FORMAT_RGB");
+                color = cv::Mat(frame->image[i].height, frame->image[i].width
+                        , CV_8UC3, frame->image[i].buffer);
+                cv::cvtColor(color, color, cv::COLOR_RGB2BGR);
+            }
+            cv::imshow("bgr", color);
         }
     }
 
@@ -58,8 +74,25 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
         case 'q': case 1048576 + 'q':
             exit_main = true;
             break;
+        case 's': case 1048576 + 's':
+            pData->saveFrame = true;
+            break;
         default:
             LOGD("Pressed key %d", key);
+    }
+
+    if(pData->saveFrame && !depth.empty() && !leftIR.empty() && !rightIR.empty()){
+        LOGI(">>>> save frame %d", pData->saveIdx);
+        char f[32];
+        sprintf(f, "%d.img", pData->saveIdx++);
+        FILE* fp = fopen(f, "w");
+        fwrite(depth.data, 2, depth.size().area(), fp);
+        fwrite(color.data, 3, color.size().area(), fp);
+        // fwrite(leftIR.data, 1, leftIR.size().area(), fp);
+        // fwrite(rightIR.data, 1, rightIR.size().area(), fp);
+        fclose(fp);
+
+        pData->saveFrame = false;
     }
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
@@ -69,10 +102,13 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
 int main(int argc, char* argv[])
 {
     const char* IP = NULL;
+    const char* ID = NULL;
     TY_DEV_HANDLE hDevice;
 
     for(int i = 1; i < argc; i++){
-        if(strcmp(argv[i], "-ip") == 0){
+        if(strcmp(argv[i], "-id") == 0){
+            ID = argv[++i];
+        }else if(strcmp(argv[i], "-ip") == 0){
             IP = argv[++i];
         }else if(strcmp(argv[i], "-h") == 0){
             LOGI("Usage: SimpleView_Callback [-h] [-ip <IP>]");
@@ -90,20 +126,23 @@ int main(int argc, char* argv[])
         LOGD("=== Open device %s", IP);
         ASSERT_OK( TYOpenDeviceWithIP(IP, &hDevice) );
     } else {
-        LOGD("=== Get device info");
-        ASSERT_OK( TYGetDeviceNumber(&n) );
-        LOGD("     - device number %d", n);
+        if(ID == NULL){
+            LOGD("=== Get device info");
+            ASSERT_OK( TYGetDeviceNumber(&n) );
+            LOGD("     - device number %d", n);
 
-        TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
-        ASSERT_OK( TYGetDeviceList(pBaseInfo, 100, &n) );
+            TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
+            ASSERT_OK( TYGetDeviceList(pBaseInfo, 100, &n) );
 
-        if(n == 0){
-            LOGD("=== No device got");
-            return -1;
+            if(n == 0){
+                LOGD("=== No device got");
+                return -1;
+            }
+            ID = pBaseInfo[0].id;
         }
 
-        LOGD("=== Open device 0");
-        ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
+        LOGD("=== Open device: %s", ID);
+        ASSERT_OK( TYOpenDevice(ID, &hDevice) );
     }
 
     int32_t allComps;
@@ -114,8 +153,8 @@ int main(int argc, char* argv[])
     }
 
     LOGD("=== Configure components, open depth cam");
-    // int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
-    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM;
+    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
+    // int32_t componentIDs = TY_COMPONENT_DEPTH_CAM;
     // int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
@@ -150,6 +189,8 @@ int main(int argc, char* argv[])
     cb_data.index = 0;
     cb_data.hDevice = hDevice;
     cb_data.render = &render;
+    cb_data.saveFrame = false;
+    cb_data.saveIdx = 0;
     ASSERT_OK( TYRegisterCallback(hDevice, frameCallback, &cb_data) );
 
     LOGD("=== Disable trigger mode");

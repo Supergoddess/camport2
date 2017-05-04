@@ -6,6 +6,7 @@ set(ALL_SAMPLES
     SimpleView_FetchFrame
     SimpleView_Registration
     SimpleView_TriggerMode
+    SimpleView_MultiDevice
     TransThrough
     DumpAllFeatures
     BlankDevGrab

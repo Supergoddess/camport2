@@ -4,6 +4,7 @@
 static char buffer[1024*1024];
 static int  n;
 static volatile bool exit_main;
+static volatile bool doTrigger = true;
 
 
 struct CallbackData {
@@ -17,6 +18,7 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
+    cv::Mat color;
     for( int i = 0; i < frame->validCount; i++ ){
         // get & show depth image
         if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
@@ -44,23 +46,17 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
         }
         // get & show RGB
         if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                    , CV_8UC3, frame->image[i].buffer);
-            cv::Mat bgr;
-            cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
-            cv::imshow("bgr", bgr);
+            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
+                cv::Mat yuv(frame->image[i].height, frame->image[i].width
+                            , CV_8UC2, frame->image[i].buffer);
+                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
+            } else {
+                cv::Mat rgb(frame->image[i].height, frame->image[i].width
+                        , CV_8UC3, frame->image[i].buffer);
+                cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
+            }
+            cv::imshow("color", color);
         }
-    }
-
-    int key = cv::waitKey(1);
-    switch(key){
-        case -1:
-            break;
-        case 'q': case 1048576 + 'q':
-            exit_main = true;
-            break;
-        default:
-            LOGD("Pressed key %d", key);
     }
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
@@ -118,7 +114,7 @@ int main(int argc, char* argv[])
     }
 
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM;
+    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
     LOGD("=== Configure feature, set resolution to 640x480.");
@@ -157,6 +153,9 @@ int main(int argc, char* argv[])
     LOGD("=== Enable trigger mode");
     ASSERT_OK( TYSetBool(hDevice, TY_COMPONENT_DEVICE, TY_BOOL_TRIGGER_MODE, true) );
 
+    LOGD("=== Enable left ir undistort");
+    TYSetBool(hDevice, TY_COMPONENT_IR_CAM_LEFT, TY_BOOL_UNDISTORTION, true);
+
     LOGD("=== Start capture");
     ASSERT_OK( TYStartCapture(hDevice) );
 
@@ -167,8 +166,24 @@ int main(int argc, char* argv[])
             LOGD("--- press any key to trigger:");
             getchar();
         }
-        ASSERT_OK( TYSendSoftTrigger(hDevice) );
-        MSLEEP(50);
+        if(doTrigger){
+            ASSERT_OK( TYSendSoftTrigger(hDevice) );
+        }
+        int key = cv::waitKey(1000);
+        switch(key){
+            case -1:
+                break;
+            case 'q': case 1048576 + 'q':
+                exit_main = true;
+                break;
+            case 't': case 1048576 + 't':
+                doTrigger = !doTrigger;
+                break;
+            default:
+                LOGD("Pressed key %d", key);
+        }
+
+        TYSetInt(hDevice, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

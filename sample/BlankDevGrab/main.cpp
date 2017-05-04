@@ -16,6 +16,7 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
+    cv::Mat color;
     for( int i = 0; i < frame->validCount; i++ ){
         // get & show depth image
         if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
@@ -43,9 +44,15 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
         }
         // get & show RGB image
         if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            cv::Mat rgb(frame->image[i].height, frame->image[i].width
+            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
+                cv::Mat yuv(frame->image[i].height, frame->image[i].width
+                            , CV_8UC2, frame->image[i].buffer);
+                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
+            } else {
+                color = cv::Mat(frame->image[i].height, frame->image[i].width
                     , CV_8UC3, frame->image[i].buffer);
-            cv::imshow("RGB", rgb);
+            }
+            cv::imshow("color", color);
         }
     }
 
@@ -105,8 +112,9 @@ int main(int argc, char* argv[])
     }
 
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
-    // int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT | TY_COMPONENT_RGB_CAM;
+    // int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
+    // int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
+    int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT | TY_COMPONENT_RGB_CAM;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
     LOGD("=== Configure feature, set resolution to 640x480.");
@@ -114,7 +122,8 @@ int main(int argc, char* argv[])
     LOGD("      other device may lays in some other components.");
     // int err = TYSetEnum(hDevice, TY_COMPONENT_DEPTH_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480);
     // ASSERT(err == TY_STATUS_OK || err == TY_STATUS_NOT_PERMITTED);
-
+    
+    
     LOGD("=== Prepare image buffer");
     int32_t frameSize;
     ASSERT_OK( TYGetFrameBufferSize(hDevice, &frameSize) );

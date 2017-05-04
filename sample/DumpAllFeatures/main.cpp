@@ -164,10 +164,13 @@ void dumpAllComponentFeatures(TY_DEV_HANDLE handle, int32_t compIDs)
 int main(int argc, char* argv[])
 {
     const char* IP = NULL;
+    const char* ID = NULL;
     TY_DEV_HANDLE handle;
 
     for(int i = 1; i < argc; i++){
-        if(strcmp(argv[i], "-ip") == 0){
+        if(strcmp(argv[i], "-id") == 0){
+            ID = argv[++i];
+        }else if(strcmp(argv[i], "-ip") == 0){
             IP = argv[++i];
         }else if(strcmp(argv[i], "-h") == 0){
             LOGI("Usage: SimpleView_Callback [-h] [-ip <IP>]");
@@ -185,16 +188,19 @@ int main(int argc, char* argv[])
         LOGD("=== Open device %s", IP);
         ASSERT_OK( TYOpenDeviceWithIP(IP, &handle) );
     } else {
-        // Get device info
-        ASSERT_OK(TYGetDeviceNumber(&n));
-        LOGD("=== device number %d", n);
-
         TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
-        ASSERT_OK(TYGetDeviceList(pBaseInfo, 100, &n));
+        if(ID == NULL){
+            // Get device info
+            ASSERT_OK(TYGetDeviceNumber(&n));
+            LOGD("=== device number %d", n);
 
-        if(n == 0){
-            LOGD("=== No device got");
-            return -1;
+            ASSERT_OK(TYGetDeviceList(pBaseInfo, 100, &n));
+
+            if(n == 0){
+                LOGD("=== No device got");
+                return -1;
+            }
+            ID = pBaseInfo[0].id;
         }
 
         LOGD("=== get device list %d:", n);
@@ -216,8 +222,8 @@ int main(int argc, char* argv[])
                     );
         }
 
-        // Open device 0
-        ASSERT_OK(TYOpenDevice(pBaseInfo[0].id, &handle));
+        LOGD("=== Open device: %s", ID);
+        ASSERT_OK(TYOpenDevice(ID, &handle));
     }
 
     // List all components

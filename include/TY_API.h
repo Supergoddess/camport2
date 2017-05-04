@@ -98,7 +98,7 @@
 //  Definitions
 //------------------------------------------------------------------------------
 #define TY_LIB_VERSION_MAJOR       2
-#define TY_LIB_VERSION_MINOR       0
+#define TY_LIB_VERSION_MINOR       2
 #define TY_LIB_VERSION_PATCH       0
 
 
@@ -179,6 +179,7 @@ typedef enum TY_FEATURE_ID_LIST
     TY_STRUCT_EXTRINSIC_TO_LEFT_IR  = 0x001 | TY_FEATURE_STRUCT, ///< extrinsic from current component to left IR, see TY_CAMERA_EXTRINSIC
     TY_STRUCT_EXTRINSIC_TO_LEFT_RGB = 0x002 | TY_FEATURE_STRUCT, ///< extrinsic from current component to left RGB, see TY_CAMERA_EXTRINSIC
     TY_STRUCT_NET_INFO              = 0x005 | TY_FEATURE_STRUCT, ///< see TY_DEVICE_NET_INFO
+    TY_STRUCT_CAM_DISTORTION        = 0x006 | TY_FEATURE_STRUCT, ///< see TY_CAMERA_DISTORTION
 
     TY_INT_WIDTH_MAX            = 0x100 | TY_FEATURE_INT,
     TY_INT_HEIGHT_MAX           = 0x101 | TY_FEATURE_INT,
@@ -270,7 +271,8 @@ typedef enum TY_PIXEL_FORMAT_LIST
     TY_PIXEL_FORMAT_UNDEFINED   = 0,
     TY_PIXEL_FORMAT_MONO        = (TY_PIXEL_MONO    | TY_PIXEL_8BIT  | 0x0000), //0x10080000
     TY_PIXEL_FORMAT_RGB         = (TY_PIXEL_COLOR   | TY_PIXEL_24BIT | 0x0010), //0x20180010
-    TY_PIXEL_FORMAT_YUV422      = (TY_PIXEL_COLOR   | TY_PIXEL_16BIT | 0x0011), //0x20100011
+    TY_PIXEL_FORMAT_YUV422      = (TY_PIXEL_COLOR   | TY_PIXEL_16BIT | 0x0011), //0x20100011, YVYU
+    TY_PIXEL_FORMAT_YUYV        = (TY_PIXEL_COLOR   | TY_PIXEL_16BIT | 0x0012), //0x20100012, YUYV
     TY_PIXEL_FORMAT_DEPTH16     = (TY_PIXEL_DEPTH   | TY_PIXEL_16BIT | 0x0020), //0x30100020
     TY_PIXEL_FORMAT_FPOINT3D    = (TY_PIXEL_POINT3D | TY_PIXEL_96BIT | 0x0030), //0x40600030
 }TY_PIXEL_FORMAT_LIST;
@@ -314,7 +316,8 @@ typedef struct TY_FEATURE_INFO
 {
     bool            isValid;            ///< true if feature exists, false otherwise
     int8_t          accessMode;         ///< feature access mode, see TY_ACCESS_MODE_LIST
-    char            reserved0[2];
+    bool            writableAtRun;      ///< feature can be written while capturing
+    char            reserved0[1];
     TY_COMPONENT_ID componentID;
     TY_FEATURE_ID   featureID;
     char            name[32];
@@ -369,6 +372,11 @@ typedef struct
 {
     float data[4*4];
 }TY_CAMERA_EXTRINSIC;
+
+typedef struct
+{
+    float data[12];
+}TY_CAMERA_DISTORTION;
 
 
 //------------------------------------------------------------------------------
@@ -994,5 +1002,6 @@ TY_CAPI             TYDepthToWorld            (TY_DEV_HANDLE hDevice, const TY_V
 TY_CAPI             TYWorldToDepth            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
 
 TY_CAPI             TYRegisterWorldToColor    (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount, uint16_t* outDepthBuffer, int32_t bufferSize);
+
 
 #endif // TY_API_H_

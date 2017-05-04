@@ -66,11 +66,6 @@ void drawHist(cv::Mat& src)
 
     Mat histImage( hist_h, hist_w, CV_8UC3, Scalar(0,0,0) );
 
-    // /// Normalize the result to [ 0, histImage.rows ]
-    // normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-    // normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-    // normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-
     double bminVal = 0, bmaxVal = 0;
     minMaxIdx(b_hist, &bminVal, &bmaxVal);
     double gminVal = 0, gmaxVal = 0;
@@ -78,30 +73,35 @@ void drawHist(cv::Mat& src)
     double rminVal = 0, rmaxVal = 0;
     minMaxIdx(r_hist, &rminVal, &rmaxVal);
     // float wmax = max(max(bmaxVal, gmaxVal), rmaxVal);
-    float wmax = 400;
-    b_hist *= 400 / wmax;
-    g_hist *= 400 / wmax;
-    r_hist *= 400 / wmax;
+    float wmax = cv::sum(g_hist).val[0] / 256 * 2;
+    b_hist *= hist_h / wmax;
+    g_hist *= hist_h / wmax;
+    r_hist *= hist_h / wmax;
 
+    std::vector<cv::Mat> hist_image_rgb;
+    hist_image_rgb.resize(3);
+    for (int idx = 0; idx < 3; idx++){
+        hist_image_rgb[idx].create(hist_h, hist_w, CV_8UC1);
+        hist_image_rgb[idx].setTo(0);
+    }
     /// Draw for each channel
     for( int i = 1; i < histSize; i++ )
     {
-        // line( histImage, Point( bin_w*(i-1), hist_h - cvRound(b_hist.at<float>(i-1)) ) ,
-                         // Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
-                         // Scalar( 255, 0, 0), 1, 4, 0  );
-        // line( histImage, Point( bin_w*(i-1), hist_h - cvRound(g_hist.at<float>(i-1)) ) ,
-                         // Point( bin_w*(i), hist_h - cvRound(g_hist.at<float>(i)) ),
-                         // Scalar( 0, 255, 0), 1, 4, 0  );
-        // line( histImage, Point( bin_w*(i-1), hist_h - cvRound(r_hist.at<float>(i-1)) ) ,
-                         // Point( bin_w*(i), hist_h - cvRound(r_hist.at<float>(i)) ),
-                         // Scalar( 0, 0, 255), 1, 4, 0  );
         if(cvRound(g_hist.at<float>(i)) > 0){
-            line( histImage, Point( bin_w*(i), hist_h) ,
+            line( hist_image_rgb[1], Point( bin_w*(i), hist_h) ,
                          Point( bin_w*(i), hist_h - cvRound(g_hist.at<float>(i)) ),
-                         Scalar( 0, 255, 0), 1, 4, 0  );
+                         Scalar::all(0xff), 1, 4, 0  );
+            line( hist_image_rgb[0], Point( bin_w*(i), hist_h) ,
+                         Point( bin_w*(i), hist_h - cvRound(b_hist.at<float>(i)) ),
+                         Scalar::all(0xff), 1, 4, 0  );
+
+            line( hist_image_rgb[2], Point( bin_w*(i), hist_h) ,
+                         Point( bin_w*(i), hist_h - cvRound(r_hist.at<float>(i)) ),
+                         Scalar::all(0xff), 1, 4, 0  );
         }
     }
 
+    merge(hist_image_rgb, histImage);
     /// Display
     namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE );
     imshow("calcHist Demo", histImage );
@@ -123,9 +123,18 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
         }
         // get & show RGB
         if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                    , CV_8UC3, frame->image[i].buffer);
-            cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
+            cv::Mat bgr;
+            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
+                cv::Mat yuv(frame->image[i].height, frame->image[i].width
+                            , CV_8UC2, frame->image[i].buffer);
+                cv::cvtColor(yuv, bgr, cv::COLOR_YUV2BGR_YVYU);
+            }
+            else{
+                cv::Mat rgb(frame->image[i].height, frame->image[i].width
+                            , CV_8UC2, frame->image[i].buffer);
+                cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
+            }
+            color = bgr;
         }
     }
 
