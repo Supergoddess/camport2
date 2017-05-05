@@ -1,15 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 
 set(ALL_SAMPLES
-    RGBAnalysis
     SimpleView_Callback
     SimpleView_FetchFrame
     SimpleView_Registration
     SimpleView_TriggerMode
     SimpleView_MultiDevice
-    TransThrough
+    SimpleView_Point3D
     DumpAllFeatures
-    BlankDevGrab
+    DepthToWorld
     )
 
 set(SAMPLES_USED_PCL
