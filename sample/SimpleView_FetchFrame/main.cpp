@@ -50,7 +50,7 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata) {
             }
             else{
                 cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
+                            , CV_8UC3, frame->image[i].buffer);
                 cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
             }
             cv::imshow("bgr", bgr);

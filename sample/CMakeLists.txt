@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
 
+option(ENABLE_PCL "Enable PCL" OFF)
+
 set(ALL_SAMPLES
     SimpleView_Callback
     SimpleView_FetchFrame
     SimpleView_Registration
     SimpleView_TriggerMode
     SimpleView_MultiDevice
-    SimpleView_Point3D
     DumpAllFeatures
-    DepthToWorld
     )
 
 set(SAMPLES_USED_PCL

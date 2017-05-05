@@ -77,32 +77,6 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata)
         }
     }
 
-    // do Registration
-    cv::Mat newDepth(color.size(), CV_16U);
-    if(!point3D.empty() && !color.empty()) {
-        ASSERT_OK( TYRegisterWorldToColor(pData->hDevice, (TY_VECT_3F*)point3D.data, 0
-                    , point3D.cols * point3D.rows, (uint16_t*)newDepth.data, newDepth.size().area()*2
-                    ));
-        cv::Mat depthColor = pData->render->Compute(newDepth);
-        cv::imshow("projected depth", depthColor);
-
-        // newDepth turn to p3d
-        point3D.create(color.size(), CV_32FC3);
-        for(int r = 0; r < newDepth.rows; r++)
-        for(int c = 0; c < newDepth.cols; c++)
-        {
-            uint16_t val = newDepth.at<uint16_t>(r, c);
-            if(val == 0){
-                cv::Point3f p(std::numeric_limits<float>::quiet_NaN()
-                        , std::numeric_limits<float>::quiet_NaN()
-                        , std::numeric_limits<float>::quiet_NaN());
-                point3D.at<cv::Point3f>(r, c) = p;
-            } else {
-                point3D.at<cv::Point3f>(r, c) = depthToWorld(m_colorIntrinsic.data, c, r, val);
-            }
-        }
-    }
-
     if(!point3D.empty()){
         pData->pcviewer->show(point3D, "Point3D");
         if(pData->pcviewer->isStopped("Point3D")){
