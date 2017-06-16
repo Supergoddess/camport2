@@ -13,51 +13,20 @@ struct CallbackData {
     DepthRender*    render;
 };
 
-void frameCallback(TY_FRAME_DATA* frame, void* userdata)
+void frameHandler(TY_FRAME_DATA* frame, void* userdata)
 {
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    cv::Mat color;
-    for( int i = 0; i < frame->validCount; i++ ){
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
-                    , CV_16U, frame->image[i].buffer);
-            cv::Mat colorDepth = pData->render->Compute(depth);
-            cv::imshow("ColorDepth", colorDepth);
-        }
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("LeftIR", leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("RightIR", rightIR);
-        }
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
-            cv::Mat point3D(frame->image[i].height, frame->image[i].width
-                    , CV_32FC3, frame->image[i].buffer);
-        }
-        // get & show RGB
-        if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
-                cv::Mat yuv(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
-                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
-            } else {
-                cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                        , CV_8UC3, frame->image[i].buffer);
-                cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
-            }
-            cv::imshow("color", color);
-        }
+    cv::Mat depth, irl, irr, color;
+    parseFrame(*frame, &depth, &irl, &irr, &color, 0);
+    if(!depth.empty()){
+        cv::Mat colorDepth = pData->render->Compute(depth);
+        cv::imshow("ColorDepth", colorDepth);
     }
+    if(!irl.empty()){ cv::imshow("LeftIR", irl); }
+    if(!irr.empty()){ cv::imshow("RightIR", irr); }
+    if(!color.empty()){ cv::imshow("Color", color); }
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
     ASSERT_OK( TYEnqueueBuffer(pData->hDevice, frame->userBuffer, frame->bufferSize) );
@@ -148,7 +117,7 @@ int main(int argc, char* argv[])
     cb_data.index = 0;
     cb_data.hDevice = hDevice;
     cb_data.render = &render;
-    ASSERT_OK( TYRegisterCallback(hDevice, frameCallback, &cb_data) );
+    // ASSERT_OK( TYRegisterCallback(hDevice, frameHandler, &cb_data) );
 
     LOGD("=== Enable trigger mode");
     ASSERT_OK( TYSetBool(hDevice, TY_COMPONENT_DEVICE, TY_BOOL_TRIGGER_MODE, true) );
@@ -161,6 +130,7 @@ int main(int argc, char* argv[])
 
     LOGD("=== Loop for send trigger signal");
     exit_main = false;
+    TY_FRAME_DATA frame;
     while(!exit_main){
         if(needKeyStrike){
             LOGD("--- press any key to trigger:");
@@ -168,22 +138,27 @@ int main(int argc, char* argv[])
         }
         if(doTrigger){
             ASSERT_OK( TYSendSoftTrigger(hDevice) );
+
+            int err = TYFetchFrame(hDevice, &frame, -1);
+            if( err != TY_STATUS_OK ) {
+                LOGD("... Drop one frame");
+            } else {
+                frameHandler(&frame, &cb_data);
+            }
         }
-        int key = cv::waitKey(1000);
-        switch(key){
-            case -1:
+        int key = cv::waitKey(10);
+        switch(key & 0xff){
+            case 0xff:
                 break;
-            case 'q': case 1048576 + 'q':
+            case 'q':
                 exit_main = true;
                 break;
-            case 't': case 1048576 + 't':
+            case 't':
                 doTrigger = !doTrigger;
                 break;
             default:
                 LOGD("Pressed key %d", key);
         }
-
-        TYSetInt(hDevice, TY_COMPONENT_LASER, TY_INT_LASER_POWER, 100);
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

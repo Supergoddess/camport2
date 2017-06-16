@@ -15,58 +15,25 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata) {
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    for( int i = 0; i < frame->validCount; i++ ) {
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM) {
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
-                          , CV_16U, frame->image[i].buffer);
-            cv::Mat colorDepth = pData->render->Compute(depth);
-            cv::imshow("ColorDepth", colorDepth);
-        }
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT) {
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
-                           , CV_8U, frame->image[i].buffer);
-            cv::imshow("LeftIR", leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT) {
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
-                            , CV_8U, frame->image[i].buffer);
-            cv::imshow("RightIR", rightIR);
-        }
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM) {
-            cv::Mat point3D(frame->image[i].height, frame->image[i].width
-                            , CV_32FC3, frame->image[i].buffer);
-        }
-        // get & show RGB
-        if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM) {
-            cv::Mat bgr;
-            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
-                cv::Mat yuv(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
-                cv::cvtColor(yuv, bgr, cv::COLOR_YUV2BGR_YVYU);
-            }
-            else{
-                cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                            , CV_8UC3, frame->image[i].buffer);
-                cv::cvtColor(rgb, bgr, cv::COLOR_RGB2BGR);
-            }
-            cv::imshow("bgr", bgr);
-        }
+    cv::Mat depth, irl, irr, color;
+    parseFrame(*frame, &depth, &irl, &irr, &color, 0);
+    if(!depth.empty()){
+        cv::Mat colorDepth = pData->render->Compute(depth);
+        cv::imshow("ColorDepth", colorDepth);
     }
+    if(!irl.empty()){ cv::imshow("LeftIR", irl); }
+    if(!irr.empty()){ cv::imshow("RightIR", irr); }
+    if(!color.empty()){ cv::imshow("Color", color); }
 
     int key = cv::waitKey(1);
-    switch(key) {
-    case -1:
+    switch(key & 0xff) {
+    case 0xff:
         break;
     case 'q':
-    case 1048576 + 'q':
         exit_main = true;
         break;
     default:
-        LOGD("Pressed key %d", key);
+        LOGD("Unmapped key %d", key);
     }
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
@@ -120,7 +87,8 @@ int main(int argc, char* argv[]) {
     }
 
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
+    int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT;
+    //int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
     //int32_t componentIDs = TY_COMPONENT_RGB_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
@@ -178,10 +146,9 @@ int main(int argc, char* argv[]) {
         int err = TYFetchFrame(hDevice, &frame, -1);
         if( err != TY_STATUS_OK ) {
             LOGD("... Drop one frame");
-            continue;
+        } else {
+            frameHandler(&frame, &cb_data);
         }
-
-        frameHandler(&frame, &cb_data);
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

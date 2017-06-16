@@ -1,5 +1,6 @@
-#include "common.hpp"
+#include <stdexcept>
 #include "PointCloudViewer.hpp"
+#include <stdio.h>
 
 #ifdef HAVE_PCL
 #  include <pcl/ModelCoefficients.h>
@@ -42,8 +43,7 @@ public:
     {
 #ifdef HAVE_PCL
         if(!(pointCloud.type() == CV_32FC3)){
-            LOGE("pcshow: pointCloud should be (type=CV_32FC3)\n");
-            return;
+            throw std::runtime_error("pcshow: pointCloud should be (type=CV_32FC3)");
         }
         
         std::map<std::string, pcl::visualization::CloudViewer*>::iterator it = m_viewerMap.find(windowName);
@@ -54,7 +54,7 @@ public:
             std::pair<std::map<std::string, pcl::visualization::CloudViewer*>::iterator, bool> ret;
             ret = m_viewerMap.insert(std::pair<std::string, pcl::visualization::CloudViewer*>(windowName, viewer));
             if(!ret.second){
-                LOGE("pcshow: insert viewer %s failed.\n", windowName.c_str());
+                // LOGE("pcshow: insert viewer %s failed.\n", windowName.c_str());
                 return;
             }
             it = ret.first;
@@ -68,8 +68,6 @@ public:
         if(reset_view){
             it->second->runOnVisualizationThreadOnce(viewerOneOff);
         }
-#else
-        LOGE("No lib PCL found");
 #endif // HAVE_PCL
     }
 
@@ -80,8 +78,6 @@ public:
 #ifdef HAVE_PCL
         std::map<std::string, pcl::visualization::CloudViewer*>::iterator it = m_viewerMap.find(windowName);
         ret = it->second->wasStopped(0);
-#else
-        LOGE("No lib PCL found");
 #endif // HAVE_PCL
         return ret;
     }
@@ -122,4 +118,33 @@ bool PointCloudViewer::isStopped(const std::string &windowName)
 void PointCloudViewer::show(const cv::Mat &pointCloud, const std::string &windowName)
 {
     impl->show(pointCloud, windowName);
+}
+
+///////////////////////////////////////////////////////////////
+
+static void writePC_XYZ(const cv::Point3f* pnts, size_t n, FILE* fp)
+{
+    for(size_t i = 0; i < n; i++){
+        if(!isnan(pnts[i].x)){
+            fprintf(fp, "%f %f %f 0 0 0\n", pnts[i].x, pnts[i].y, pnts[i].z);
+        }
+    }
+}
+
+void writePointCloud(const cv::Point3f* pnts, size_t n, const char* file, int format)
+{
+    FILE* fp = fopen(file, "w");
+    if(!fp){
+        return;
+    }
+
+    switch(format){
+        case PC_FILE_FORMAT_XYZ:
+            writePC_XYZ(pnts, n, fp);
+            break;
+        default:
+            break;
+    }
+
+    fclose(fp);
 }

@@ -16,6 +16,9 @@ struct CallbackData {
     TY_DEV_HANDLE   hDevice;
     DepthRender*    render;
     PointCloudViewer* pcviewer;
+
+    bool saveOneFramePoint3d;
+    int  fileIndex;
 };
 
 cv::Point3f depthToWorld(float* intr, int x, int y, int z)
@@ -34,62 +37,36 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    cv::Mat point3D, color;
-    for( int i = 0; i < frame->validCount; i++ ){
-#if 0
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
-                    , CV_16U, frame->image[i].buffer);
-            cv::Mat colorDepth = pData->render->Compute(depth);
-            cv::imshow("ColorDepth", colorDepth);
-        }
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("LeftIR", leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("RightIR", rightIR);
-        }
-#endif
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
-            point3D = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_32FC3, frame->image[i].buffer);
-        }
-        // get & show RGB
-        if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
-                cv::Mat yuv(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
-                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
-            } else {
-                color = cv::Mat(frame->image[i].height, frame->image[i].width
-                        , CV_8UC3, frame->image[i].buffer);
-                cv::cvtColor(color, color, cv::COLOR_RGB2BGR);
-            }
-            cv::imshow("color", color);
-        }
+    cv::Mat depth, color, p3d;
+    parseFrame(*frame, &depth, 0, 0, &color, &p3d);
+    if(pData->saveOneFramePoint3d){
+        char file[32];
+        sprintf(file, "points-%d.xyz", pData->fileIndex++);
+        writePointCloud((cv::Point3f*)p3d.data, p3d.total(), file, PC_FILE_FORMAT_XYZ);
+        pData->saveOneFramePoint3d = false;
+        imshow("depth", depth * 32);
     }
 
-    if(!point3D.empty()){
-        pData->pcviewer->show(point3D, "Point3D");
+    if(!color.empty()){
+        imshow("Color", color);
+    }
+    if(!p3d.empty()){
+        pData->pcviewer->show(p3d, "Point3D");
         if(pData->pcviewer->isStopped("Point3D")){
             exit_main = true;
             return;
         }
     }
-    int key = cv::waitKey(1);
-    switch(key){
-        case -1:
+
+    int key = cv::waitKey(100);
+    switch(key & 0xff){
+        case 0xff:
             break;
-        case 'q': case 1048576 + 'q':
+        case 'q':
             exit_main = true;
+            break;
+        case 's':
+            pData->saveOneFramePoint3d = true;
             break;
         default:
             LOGD("Pressed key %d", key);
@@ -263,6 +240,8 @@ int main(int argc, char* argv[])
     cb_data.hDevice = hDevice;
     cb_data.render = &render;
     cb_data.pcviewer = &pcviewer;
+    cb_data.saveOneFramePoint3d = false;
+    cb_data.fileIndex = 0;
     // ASSERT_OK( TYRegisterCallback(hDevice, frameHandler, &cb_data) );
 
     LOGD("=== Disable trigger mode");

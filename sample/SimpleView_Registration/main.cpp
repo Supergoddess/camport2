@@ -18,62 +18,24 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    cv::Mat depth, point3D, color;
-    for( int i = 0; i < frame->validCount; i++ ){
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            depth = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_16U, frame->image[i].buffer);
-            cv::Mat colorDepth = pData->render->Compute(depth);
-            cv::imshow("ColorDepth", colorDepth);
+    cv::Mat depth, irl, irr, color, point3D;
+    parseFrame(*frame, &depth, &irl, &irr, &color, &point3D);
+    if(!depth.empty()){
+        cv::Mat colorDepth = pData->render->Compute(depth);
+        cv::imshow("ColorDepth", colorDepth);
+    }
+    if(!irl.empty()){ cv::imshow("LeftIR", irl); }
+    if(!irr.empty()){ cv::imshow("RightIR", irr); }
+    if(!color.empty()){
+        if(!pData->colorM.empty()){
+            cv::Mat u;
+            cv::undistort(color, u, pData->colorM, pData->colorD, pData->colorM);
+            // cv::fisheye::undistortImage(color, color, pData->colorM, pData->colorD, pData->colorM, color.size());
+            color = u;
         }
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("LeftIR", leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("RightIR", rightIR);
-        }
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
-            point3D = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_32FC3, frame->image[i].buffer);
-        }
-        // get & show RGB
-        if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
-                cv::Mat yuv(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
-                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
-            } else {
-                color = cv::Mat(frame->image[i].height, frame->image[i].width
-                        , CV_8UC3, frame->image[i].buffer);
-                cv::cvtColor(color, color, cv::COLOR_RGB2BGR);
-            }
-
-            if(!pData->colorD.empty() && !pData->colorM.empty()){
-                cv::Mat u;
-                cv::undistort(color, u, pData->colorM, pData->colorD, pData->colorM);
-                // cv::fisheye::undistortImage(color, color, pData->colorM, pData->colorD, pData->colorM, color.size());
-                color = u;
-            }
-            cv::Mat resizedColor;
-            cv::Size size;
-            if(!depth.empty()){
-                size = depth.size();
-            } else if(!point3D.empty()){
-                size = point3D.size();
-            } else {
-                size = color.size();
-            }
-            cv::resize(color, resizedColor, size, 0, 0, CV_INTER_LINEAR);
-            cv::imshow("color", resizedColor);
-        }
+        cv::Mat resizedColor;
+        cv::resize(color, resizedColor, depth.size(), 0, 0, CV_INTER_LINEAR);
+        cv::imshow("color", resizedColor);
     }
 
     // do Registration
@@ -83,11 +45,16 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
                     , point3D.cols * point3D.rows, (uint16_t*)buffer, sizeof(buffer)
                     ));
         newDepth = cv::Mat(color.rows, color.cols, CV_16U, (uint16_t*)buffer);
+        cv::Mat resized_color;
+        cv::Mat temp;
+        //you may want to use median filter to fill holes in projected depth image or do something else here
+        cv::medianBlur(newDepth,temp,5);
+        newDepth = temp;
+        //resize to the same size for display
+        cv::resize(newDepth, newDepth, depth.size(), 0, 0, 0);
+        cv::resize(color, resized_color, depth.size());
         cv::Mat depthColor = pData->render->Compute(newDepth);
-
-        depthColor = depthColor / 2 + color / 2;
-
-        cv::resize(depthColor, depthColor, depth.size());
+        depthColor = depthColor / 2 + resized_color / 2;
         cv::imshow("projected depth", depthColor);
     }
 
@@ -206,19 +173,26 @@ int main(int argc, char* argv[])
 
     LOGD("=== Read color rectify matrix");
     {
-        TY_CAMERA_INTRINSIC intri;
-        TY_CAMERA_DISTORTION dist;
-        int err = TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_DISTORTION, &dist, sizeof(dist));
-        if( err != TY_STATUS_OK )
+        TY_CAMERA_DISTORTION color_dist;
+        TY_CAMERA_INTRINSIC color_intri;
+        TY_STATUS ret = TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_DISTORTION, &color_dist, sizeof(color_dist));
+        ret |= TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_INTRINSIC, &color_intri, sizeof(color_intri));
+        if (ret == TY_STATUS_OK)
         {
-            LOGW("get color distortion failed: %s", TYErrorString(err));
-        } else {
-            ASSERT_OK( TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_INTRINSIC, &intri, sizeof(intri)) );
-            cb_data.colorM = cv::Mat(3, 3, CV_64F);
-            for(int i = 0; i < 9; i++) cb_data.colorM.at<double>(i) = intri.data[i];
-            cb_data.colorD = cv::Mat(1, 12, CV_64F);
-            for(int i = 0; i < 12; i++) cb_data.colorD.at<double>(i) = dist.data[i];
-            cb_data.colorD = cb_data.colorD.colRange(0, 8);
+            cb_data.colorM.create(3, 3, CV_32FC1);
+            cb_data.colorD.create(5, 1, CV_32FC1);
+            memcpy(cb_data.colorM.data, color_intri.data, sizeof(color_intri.data));
+            memcpy(cb_data.colorD.data, color_dist.data, sizeof(float)*cb_data.colorD.rows);
+        }
+        else
+        {//let's try  to load from file...
+            cv::FileStorage fs("color_intri.xml", cv::FileStorage::READ);
+            if (fs.isOpened())
+            {
+                fs["M"] >> cb_data.colorM;
+                fs["D"] >> cb_data.colorD;
+                cb_data.colorD = cb_data.colorD.colRange(0, 8);
+            }
         }
     }
 

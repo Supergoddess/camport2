@@ -9,6 +9,7 @@ struct CamInfo
     char*               fb[2];
     TY_FRAME_DATA       frame;
     int                 idx;
+    DepthRender         render;
 
     CamInfo() : hDev(0), idx(0) {fb[0]=0; fb[1]=0;}
 };
@@ -18,53 +19,28 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata)
 {
     CamInfo* pData = (CamInfo*) userdata;
 
-    for( int i = 0; i < frame->validCount; i++ ){
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
-                    , CV_16U, frame->image[i].buffer);
-            char win[32];
-            sprintf(win, "depth-%s", pData->sn);
-            cv::imshow(win, depth * 16);
-        }
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            char win[32];
-            sprintf(win, "LeftIR-%s", pData->sn);
-            cv::imshow(win, leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            char win[32];
-            sprintf(win, "RightIR-%s", pData->sn);
-            cv::imshow(win, rightIR);
-        }
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
-            cv::Mat point3D(frame->image[i].height, frame->image[i].width
-                    , CV_32FC3, frame->image[i].buffer);
-        }
-        // get & show RGB
-        if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            cv::Mat color;
-            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
-                cv::Mat yuv(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
-                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
-            } else {
-                cv::Mat rgb(frame->image[i].height, frame->image[i].width
-                        , CV_8UC3, frame->image[i].buffer);
-                cv::cvtColor(rgb, color, cv::COLOR_RGB2BGR);
-            }
-            char win[32];
-            sprintf(win, "color-%s", pData->sn);
-            cv::imshow(win, color);
-        }
+    cv::Mat depth, irl, irr, color;
+    parseFrame(*frame, &depth, &irl, &irr, &color, 0);
+
+    char win[64];
+    if(!depth.empty()){
+        cv::Mat colorDepth = pData->render.Compute(depth);
+        sprintf(win, "depth-%s", pData->sn);
+        cv::imshow(win, colorDepth);
     }
+    if(!irl.empty()){
+        sprintf(win, "LeftIR-%s", pData->sn);
+        cv::imshow(win, irl);
+    }
+    if(!irr.empty()){
+        sprintf(win, "RightIR-%s", pData->sn);
+        cv::imshow(win, irr);
+    }
+    if(!color.empty()){
+        sprintf(win, "color-%s", pData->sn);
+        cv::imshow(win, color);
+    }
+
     pData->idx++;
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
@@ -87,7 +63,7 @@ int main()
     TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
     ASSERT_OK( TYGetDeviceList(pBaseInfo, 100, &n) );
 
-    if(n < 2){
+    if(n < 1){
         LOGD("=== Need more than 1 devices");
         return -1;
     }
@@ -142,7 +118,7 @@ int main()
 
     while(!exit_main){
         for(int i = 0; i < cams.size(); i++) {
-            int err = TYFetchFrame(cams[i].hDev, &cams[i].frame, 100);
+            int err = TYFetchFrame(cams[i].hDev, &cams[i].frame, 1000);
             if( err != TY_STATUS_OK ){
                 LOGD("cam %s %d ... Drop one frame", cams[i].sn, cams[i].idx);
                 continue;
@@ -152,14 +128,14 @@ int main()
         }
 
         int key = cv::waitKey(1);
-        switch(key){
-            case -1:
+        switch(key & 0xff){
+            case 0xff:
                 break;
-            case 'q': case 1048576 + 'q':
+            case 'q':
                 exit_main = true;
                 break;
             default:
-                LOGD("Pressed key %d", key);
+                LOGD("Unmapped key %d", key);
         }
 
     }

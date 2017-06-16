@@ -54,7 +54,8 @@ static ImageBuffer::PixelTypes TY_PIXEL_TO_OLD_PIXEL(int32_t tyPixelType)
     switch(tyPixelType){
         case TY_PIXEL_FORMAT_MONO: return ImageBuffer::PIX_8C1;
         case TY_PIXEL_FORMAT_RGB: return ImageBuffer::PIX_8C3;
-        case TY_PIXEL_FORMAT_YUV422: return ImageBuffer::PIX_8C2;
+        case TY_PIXEL_FORMAT_YUYV: return ImageBuffer::PIX_8C2;
+        case TY_PIXEL_FORMAT_YVYU: return ImageBuffer::PIX_8C2;
         case TY_PIXEL_FORMAT_DEPTH16: return ImageBuffer::PIX_16C1;
         case TY_PIXEL_FORMAT_FPOINT3D: return ImageBuffer::PIX_32FC3;
         default: return (ImageBuffer::PixelTypes)-1;

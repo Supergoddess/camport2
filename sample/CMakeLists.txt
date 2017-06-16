@@ -24,8 +24,11 @@ set(INCLUDE_PATH ../include)
 # === lib to speed up
 # ========================================
 set(COMMON_SOURCES
+    common/MatViewer.cpp
     common/PointCloudViewer.cpp
     )
+
+#add_definitions(-std=c++11)
 
 add_library(sample_common STATIC ${COMMON_SOURCES})
 include_directories(${INCLUDE_PATH})

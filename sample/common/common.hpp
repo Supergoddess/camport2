@@ -6,22 +6,26 @@
 #include <stdlib.h>
 #include "TY_API.h"
 
+#ifndef ASSERT
 #define ASSERT(x)   do{ \
                 if(!(x)) { \
-                    LOGD("Assert failed at %s:%d", __FILE__, __LINE__); \
-                    LOGD("    : " #x ); \
+                    LOGE("Assert failed at %s:%d", __FILE__, __LINE__); \
+                    LOGE("    : " #x ); \
                     abort(); \
                 } \
             }while(0)
+#endif
 
+#ifndef ASSERT_OK
 #define ASSERT_OK(x)    do{ \
                 int err = (x); \
                 if(err != TY_STATUS_OK) { \
-                    LOGD("Assert failed: error %d(%s) at %s:%d", err, TYErrorString(err), __FILE__, __LINE__); \
-                    LOGD("    : " #x ); \
+                    LOGE("Assert failed: error %d(%s) at %s:%d", err, TYErrorString(err), __FILE__, __LINE__); \
+                    LOGE("    : " #x ); \
                     abort(); \
                 } \
             }while(0)
+#endif
 
 
 #define LOGD(fmt,...)  printf(fmt "\n", ##__VA_ARGS__)
@@ -51,7 +55,9 @@
 #endif
 
 
+#include "Utils.hpp"
 #include "DepthRender.hpp"
+#include "MatViewer.hpp"
 #include "PointCloudViewer.hpp"
 
 #endif

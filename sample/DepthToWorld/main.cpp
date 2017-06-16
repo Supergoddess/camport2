@@ -17,60 +17,34 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    for( int i = 0; i < frame->validCount; i++ ){
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            cv::Mat depth(frame->image[i].height, frame->image[i].width
-                    , CV_16U, frame->image[i].buffer);
-            cv::Mat colorDepth = pData->render->Compute(depth);
-            cv::imshow("ColorDepth", colorDepth);
+    cv::Mat depth;
+    parseFrame(*frame, &depth, 0, 0, 0, 0);
 
-            // conver depth to world
-            static TY_VECT_3F depthbuf[1280*960];
-            static TY_VECT_3F worldbuf[1280*960];
-            int k = 0;
-            uint16_t* pdepth = (uint16_t*)depth.data;
-            for(int r = 0; r < depth.rows; r++)
-                for(int c = 0; c < depth.cols; c++){
-                    depthbuf[k].x = c;
-                    depthbuf[k].y = r;
-                    depthbuf[k].z = pdepth[k];
-                    k++;
-                }
-            ASSERT_OK( TYDepthToWorld(pData->hDevice, depthbuf, worldbuf, 0, depth.rows*depth.cols) );
+    if(!depth.empty()){
+        cv::Mat colorDepth = pData->render->Compute(depth);
+        cv::imshow("ColorDepth", colorDepth);
 
-            // show point3d
-            cv::Mat point3D(depth.rows, depth.cols, CV_32FC3, (void*)worldbuf);
-            pData->pcviewer->show(point3D, "depth2world");
-            if(pData->pcviewer->isStopped("depth2world")){
-                exit_main = true;
-                return;
+        // conver depth to world
+        static TY_VECT_3F depthbuf[1280*960];
+        static TY_VECT_3F worldbuf[1280*960];
+        int k = 0;
+        uint16_t* pdepth = (uint16_t*)depth.data;
+        for(int r = 0; r < depth.rows; r++)
+            for(int c = 0; c < depth.cols; c++){
+                depthbuf[k].x = c;
+                depthbuf[k].y = r;
+                depthbuf[k].z = pdepth[k];
+                k++;
             }
+        ASSERT_OK( TYDepthToWorld(pData->hDevice, depthbuf, worldbuf, 0, depth.rows*depth.cols) );
+
+        // show point3d
+        cv::Mat point3D(depth.rows, depth.cols, CV_32FC3, (void*)worldbuf);
+        pData->pcviewer->show(point3D, "depth2world");
+        if(pData->pcviewer->isStopped("depth2world")){
+            exit_main = true;
+            return;
         }
-#if 0
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            cv::Mat leftIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("LeftIR", leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            cv::Mat rightIR(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("RightIR", rightIR);
-        }
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
-            cv::Mat point3D(frame->image[i].height, frame->image[i].width
-                    , CV_32FC3, frame->image[i].buffer);
-            pData->pcviewer->show(point3D, "Point3D");
-            if(pData->pcviewer->isStopped("Point3D")){
-                exit_main = true;
-                return;
-            }
-        }
-#endif
     }
 
     int key = cv::waitKey(1);

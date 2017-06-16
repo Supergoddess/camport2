@@ -19,4 +19,11 @@ private:
 };
 
 
+enum{
+    PC_FILE_FORMAT_XYZ = 0,
+};
+void writePointCloud(const cv::Point3f* pnts, size_t n, const char* file, int format);
+
+
+
 #endif

@@ -1,9 +1,7 @@
 #include "../common/common.hpp"
 
 static char buffer[1024*1024];
-static int  n;
-static volatile bool exit_main;
-
+static bool fakeLock = false; // NOTE: fakeLock may lock failed
 
 struct CallbackData {
     int             index;
@@ -11,6 +9,11 @@ struct CallbackData {
     DepthRender*    render;
     bool            saveFrame;
     int             saveIdx;
+    cv::Mat         depth;
+    cv::Mat         leftIR;
+    cv::Mat         rightIR;
+    cv::Mat         color;
+    cv::Mat         point3D;
 };
 
 void frameCallback(TY_FRAME_DATA* frame, void* userdata)
@@ -18,81 +21,24 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
 
-    cv::Mat depth, leftIR, rightIR, color;
-    for( int i = 0; i < frame->validCount; i++ ){
-        // get & show depth image
-        if(frame->image[i].componentID == TY_COMPONENT_DEPTH_CAM){
-            depth = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_16U, frame->image[i].buffer);
-            cv::Mat colorDepth = pData->render->Compute(depth);
-            {
-                std::stringstream ss;
-                ss << "center depth: " << depth.at<uint16_t>(depth.rows/2, depth.cols/2);
-                putText(colorDepth, ss.str(), cv::Point(0,25), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0,255,0), 2);
-            }
-            cv::imshow("ColorDepth", colorDepth);
-        }
-        // get & show left ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_LEFT){
-            leftIR = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("LeftIR", leftIR);
-        }
-        // get & show right ir image
-        if(frame->image[i].componentID == TY_COMPONENT_IR_CAM_RIGHT){
-            rightIR = cv::Mat(frame->image[i].height, frame->image[i].width
-                    , CV_8U, frame->image[i].buffer);
-            cv::imshow("RightIR", rightIR);
-        }
-        // get & show left ir image
-        // get point3D
-        if(frame->image[i].componentID == TY_COMPONENT_POINT3D_CAM){
-            cv::Mat point3D(frame->image[i].height, frame->image[i].width
-                    , CV_32FC3, frame->image[i].buffer);
-        }
-        // get & show RGB
-        if(frame->image[i].componentID == TY_COMPONENT_RGB_CAM){
-            if (frame->image[i].pixelFormat == TY_PIXEL_FORMAT_YUV422){
-                LOGD("Color format TY_PIXEL_FORMAT_YUV422");
-                cv::Mat yuv(frame->image[i].height, frame->image[i].width
-                            , CV_8UC2, frame->image[i].buffer);
-                cv::cvtColor(yuv, color, cv::COLOR_YUV2BGR_YVYU);
-            } else {
-                LOGD("Color format TY_PIXEL_FORMAT_RGB");
-                color = cv::Mat(frame->image[i].height, frame->image[i].width
-                        , CV_8UC3, frame->image[i].buffer);
-                cv::cvtColor(color, color, cv::COLOR_RGB2BGR);
-            }
-            cv::imshow("bgr", color);
-        }
+    while(fakeLock){
+        MSLEEP(10);
     }
+    fakeLock = true;
 
-    int key = cv::waitKey(1);
-    switch(key){
-        case -1:
-            break;
-        case 'q': case 1048576 + 'q':
-            exit_main = true;
-            break;
-        case 's': case 1048576 + 's':
-            pData->saveFrame = true;
-            break;
-        default:
-            LOGD("Pressed key %d", key);
-    }
+    pData->depth.resize(0);
+    pData->leftIR.resize(0);
+    pData->rightIR.resize(0);
+    pData->color.resize(0);
+    pData->point3D.resize(0);
 
-    if(pData->saveFrame && !depth.empty() && !leftIR.empty() && !rightIR.empty()){
-        LOGI(">>>> save frame %d", pData->saveIdx);
-        char f[32];
-        sprintf(f, "%d.img", pData->saveIdx++);
-        FILE* fp = fopen(f, "w");
-        fwrite(depth.data, 2, depth.size().area(), fp);
-        fwrite(color.data, 3, color.size().area(), fp);
-        // fwrite(leftIR.data, 1, leftIR.size().area(), fp);
-        // fwrite(rightIR.data, 1, rightIR.size().area(), fp);
-        fclose(fp);
+    parseFrame(*frame, &pData->depth, &pData->leftIR, &pData->rightIR
+            , &pData->color, &pData->point3D);
 
-        pData->saveFrame = false;
+    fakeLock = false;
+
+    if(!pData->color.empty()){
+        LOGI("Color format is %s", colorFormatName(TYImageInFrame(*frame, TY_COMPONENT_RGB_CAM)->pixelFormat));
     }
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
@@ -128,6 +74,7 @@ int main(int argc, char* argv[])
     } else {
         if(ID == NULL){
             LOGD("=== Get device info");
+            int n;
             ASSERT_OK( TYGetDeviceNumber(&n) );
             LOGD("     - device number %d", n);
 
@@ -200,9 +147,56 @@ int main(int argc, char* argv[])
     ASSERT_OK( TYStartCapture(hDevice) );
 
     LOGD("=== Wait for callback");
-    exit_main = false;
+    bool exit_main = false;
+    DepthViewer depthViewer;
     while(!exit_main){
-        MSLEEP(100);
+        while(fakeLock){
+            MSLEEP(10);
+        }
+        fakeLock = true;
+
+        if(!cb_data.depth.empty()){
+            depthViewer.show("depth", cb_data.depth);
+        }
+        if(!cb_data.leftIR.empty()){
+            cv::imshow("LeftIR", cb_data.leftIR);
+        }
+        if(!cb_data.rightIR.empty()){
+            cv::imshow("RightIR", cb_data.rightIR);
+        }
+        if(!cb_data.color.empty()){
+            cv::imshow("color", cb_data.color);
+        }
+
+        if(cb_data.saveFrame && !cb_data.depth.empty() && !cb_data.leftIR.empty() && !cb_data.rightIR.empty()){
+            LOGI(">>>> save frame %d", cb_data.saveIdx);
+            char f[32];
+            sprintf(f, "%d.img", cb_data.saveIdx++);
+            FILE* fp = fopen(f, "w");
+            fwrite(cb_data.depth.data, 2, cb_data.depth.size().area(), fp);
+            fwrite(cb_data.color.data, 3, cb_data.color.size().area(), fp);
+            // fwrite(cb_data.leftIR.data, 1, cb_data.leftIR.size().area(), fp);
+            // fwrite(cb_data.rightIR.data, 1, cb_data.rightIR.size().area(), fp);
+            fclose(fp);
+
+            cb_data.saveFrame = false;
+        }
+
+        fakeLock = false;
+
+        int key = cv::waitKey(10);
+        switch(key & 0xff){
+            case 0xff:
+                break;
+            case 'q':
+                exit_main = true;
+                break;
+            case 's':
+                cb_data.saveFrame = true;
+                break;
+            default:
+                LOGD("Unmapped key %d", key);
+        }
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

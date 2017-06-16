@@ -76,6 +76,15 @@ void dumpFeature(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID, TY_FEATURE_ID fea
                     LOGD("===%23s%f %f %f %f", "", p->data[12], p->data[13], p->data[14], p->data[15]);
                     return;
                 }
+                case TY_STRUCT_CAM_DISTORTION:{
+                    TY_CAMERA_DISTORTION* p = (TY_CAMERA_DISTORTION*)buffer;
+                    ASSERT_OK(TYGetStruct(handle, compID, featID, (void*)p
+                                , sizeof(TY_CAMERA_DISTORTION)));
+                    LOGD("===%23s%f %f %f %f", "", p->data[0], p->data[1], p->data[2], p->data[3]);
+                    LOGD("===%23s%f %f %f %f", "", p->data[4], p->data[5], p->data[6], p->data[7]);
+                    LOGD("===%23s%f %f %f %f", "", p->data[8], p->data[9], p->data[10], p->data[11]);
+                    return;
+                }
                 default:
                     LOGD("===         %s: Unknown struct", name);
                     return;
@@ -84,81 +93,64 @@ void dumpFeature(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID, TY_FEATURE_ID fea
     }
 }
 
-void dumpFeatures(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID)
+#define DUMP_FEATURE(handle, compid, feature)  dumpFeature( (handle), (compid), (feature) , #feature );
+
+void dumpComponentFeatures(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID)
 {
-    dumpFeature(handle, compID, TY_STRUCT_CAM_INTRINSIC         , "TY_STRUCT_CAM_INTRINSIC          ");
-    dumpFeature(handle, compID, TY_STRUCT_EXTRINSIC_TO_LEFT_IR  , "TY_STRUCT_EXTRINSIC_TO_LEFT_IR   ");
-    dumpFeature(handle, compID, TY_STRUCT_EXTRINSIC_TO_LEFT_RGB , "TY_STRUCT_EXTRINSIC_TO_LEFT_RGB  ");
+    DUMP_FEATURE(handle, compID, TY_STRUCT_CAM_INTRINSIC );
+    DUMP_FEATURE(handle, compID, TY_STRUCT_EXTRINSIC_TO_LEFT_IR );
+    DUMP_FEATURE(handle, compID, TY_STRUCT_EXTRINSIC_TO_LEFT_RGB );
+    DUMP_FEATURE(handle, compID, TY_STRUCT_CAM_DISTORTION);
 
-    dumpFeature(handle, compID, TY_INT_WIDTH_MAX                , "TY_INT_WIDTH_MAX                 ");
-    dumpFeature(handle, compID, TY_INT_HEIGHT_MAX               , "TY_INT_HEIGHT_MAX                ");
-    dumpFeature(handle, compID, TY_INT_OFFSET_X                 , "TY_INT_OFFSET_X                  ");
-    dumpFeature(handle, compID, TY_INT_OFFSET_Y                 , "TY_INT_OFFSET_Y                  ");
-    dumpFeature(handle, compID, TY_INT_WIDTH                    , "TY_INT_WIDTH                     ");
-    dumpFeature(handle, compID, TY_INT_HEIGHT                   , "TY_INT_HEIGHT                    ");
-    dumpFeature(handle, compID, TY_INT_IMAGE_SIZE               , "TY_INT_IMAGE_SIZE                ");
-    dumpFeature(handle, compID, TY_ENUM_PIXEL_FORMAT            , "TY_ENUM_PIXEL_FORMAT             ");
-    dumpFeature(handle, compID, TY_ENUM_IMAGE_MODE              , "TY_ENUM_IMAGE_MODE               ");
-                                                                                                    
-    dumpFeature(handle, compID, TY_BOOL_TRIGGER_MODE            , "TY_BOOL_TRIGGER_MODE             ");
-    dumpFeature(handle, compID, TY_ENUM_TRIGGER_ACTIVATION      , "TY_ENUM_TRIGGER_ACTIVATION       ");
-    dumpFeature(handle, compID, TY_INT_FRAME_PER_TRIGGER        , "TY_INT_FRAME_PER_TRIGGER         ");
-                                                                                                    
-    dumpFeature(handle, compID, TY_BOOL_AUTO_EXPOSURE           , "TY_BOOL_AUTO_EXPOSURE            ");
-    dumpFeature(handle, compID, TY_INT_EXPOSURE_TIME            , "TY_INT_EXPOSURE_TIME             ");
-    dumpFeature(handle, compID, TY_BOOL_AUTO_GAIN               , "TY_BOOL_AUTO_GAIN                ");
-    dumpFeature(handle, compID, TY_INT_GAIN                     , "TY_INT_GAIN                      ");
-                                                                                                    
-    dumpFeature(handle, compID, TY_BOOL_UNDISTORTION            , "TY_BOOL_UNDISTORTION             ");
+    DUMP_FEATURE(handle, compID, TY_INT_WIDTH_MAX);
+    DUMP_FEATURE(handle, compID, TY_INT_HEIGHT_MAX);
+    DUMP_FEATURE(handle, compID, TY_INT_OFFSET_X);
+    DUMP_FEATURE(handle, compID, TY_INT_OFFSET_Y);
+    DUMP_FEATURE(handle, compID, TY_INT_WIDTH);
+    DUMP_FEATURE(handle, compID, TY_INT_HEIGHT);
+    DUMP_FEATURE(handle, compID, TY_INT_IMAGE_SIZE);
+    DUMP_FEATURE(handle, compID, TY_ENUM_PIXEL_FORMAT);
+    DUMP_FEATURE(handle, compID, TY_ENUM_IMAGE_MODE);
+                                                                
+    DUMP_FEATURE(handle, compID, TY_BOOL_TRIGGER_MODE);
+    DUMP_FEATURE(handle, compID, TY_ENUM_TRIGGER_ACTIVATION);
+    DUMP_FEATURE(handle, compID, TY_INT_FRAME_PER_TRIGGER);
+                                                                
+    DUMP_FEATURE(handle, compID, TY_BOOL_AUTO_EXPOSURE);
+    DUMP_FEATURE(handle, compID, TY_INT_EXPOSURE_TIME );
+    DUMP_FEATURE(handle, compID, TY_BOOL_AUTO_GAIN);
+    DUMP_FEATURE(handle, compID, TY_INT_GAIN);
+                                                                
+    DUMP_FEATURE(handle, compID, TY_BOOL_UNDISTORTION);
 
-    dumpFeature(handle, compID, TY_INT_LASER_POWER              , "TY_INT_LASER_POWER               ");
+    DUMP_FEATURE(handle, compID, TY_INT_LASER_POWER);
 
-    dumpFeature(handle, compID, TY_INT_R_GAIN                   , "TY_INT_R_GAIN                    ");
-    dumpFeature(handle, compID, TY_INT_G_GAIN                   , "TY_INT_G_GAIN                    ");
-    dumpFeature(handle, compID, TY_INT_B_GAIN                   , "TY_INT_B_GAIN                    ");
+    DUMP_FEATURE(handle, compID, TY_INT_R_GAIN);
+    DUMP_FEATURE(handle, compID, TY_INT_G_GAIN);
+    DUMP_FEATURE(handle, compID, TY_INT_B_GAIN);
 }
+
+#define DUMP_COMPONENT(handle,compIds,id) do{\
+                                                if(compIds & id){\
+                                                    LOGD("===  %s:",#id);\
+                                                    dumpComponentFeatures(handle, id);\
+                                                  }\
+                                            }while(0)
 
 void dumpAllComponentFeatures(TY_DEV_HANDLE handle, int32_t compIDs)
 {
     bool hasFeature;
 
     LOGD("=== Dump all components and features:");
-    if(compIDs & TY_COMPONENT_DEVICE){
-        LOGD("===  TY_COMPONENT_DEVICE:");
-        dumpFeatures(handle, TY_COMPONENT_DEVICE);
-    }
-    if(compIDs & TY_COMPONENT_DEPTH_CAM){
-        LOGD("===  TY_COMPONENT_DEPTH_CAM:");
-        dumpFeatures(handle, TY_COMPONENT_DEPTH_CAM);
-    }
-    if(compIDs & TY_COMPONENT_POINT3D_CAM){
-        LOGD("===  TY_COMPONENT_POINT3D_CAM:");
-        dumpFeatures(handle, TY_COMPONENT_POINT3D_CAM);
-    }
-    if(compIDs & TY_COMPONENT_IR_CAM_LEFT){
-        LOGD("===  TY_COMPONENT_IR_CAM_LEFT:");
-        dumpFeatures(handle, TY_COMPONENT_IR_CAM_LEFT);
-    }
-    if(compIDs & TY_COMPONENT_IR_CAM_RIGHT){
-        LOGD("===  TY_COMPONENT_IR_CAM_RIGHT:");
-        dumpFeatures(handle, TY_COMPONENT_IR_CAM_RIGHT);
-    }
-    if(compIDs & TY_COMPONENT_RGB_CAM_LEFT){
-        LOGD("===  TY_COMPONENT_RGB_CAM_LEFT:");
-        dumpFeatures(handle, TY_COMPONENT_RGB_CAM_LEFT);
-    }
-    if(compIDs & TY_COMPONENT_RGB_CAM_RIGHT){
-        LOGD("===  TY_COMPONENT_RGB_CAM_RIGHT:");
-        dumpFeatures(handle, TY_COMPONENT_RGB_CAM_RIGHT);
-    }
-    if(compIDs & TY_COMPONENT_LASER){
-        LOGD("===  TY_COMPONENT_LASER:");
-        dumpFeatures(handle, TY_COMPONENT_LASER);
-    }
-    if(compIDs & TY_COMPONENT_IMU){
-        LOGD("===  TY_COMPONENT_IMU:");
-        dumpFeatures(handle, TY_COMPONENT_IMU);
-    }
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_DEVICE);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_DEPTH_CAM);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_POINT3D_CAM);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_IR_CAM_LEFT);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_IR_CAM_RIGHT);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_RGB_CAM_LEFT);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_RGB_CAM_RIGHT);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_LASER);
+    DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_IMU);
 }
 
 int main(int argc, char* argv[])
