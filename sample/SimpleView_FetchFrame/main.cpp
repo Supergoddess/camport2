@@ -87,9 +87,7 @@ int main(int argc, char* argv[]) {
     }
 
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT;
-    //int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
-    //int32_t componentIDs = TY_COMPONENT_RGB_CAM | TY_COMPONENT_IR_CAM_LEFT;
+    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
     LOGD("=== Configure feature, set resolution to 640x480.");
