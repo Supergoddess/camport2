@@ -176,11 +176,29 @@ int main(int argc, char* argv[])
     ASSERT_OK( TYLibVersion(pVer) );
     LOGD("=== lib version: %d.%d.%d", pVer->major, pVer->minor, pVer->patch);
 
+    TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
     if(IP) {
         LOGD("=== Open device %s", IP);
         ASSERT_OK( TYOpenDeviceWithIP(IP, &handle) );
+
+        ASSERT_OK( TYGetDeviceInfo(handle, pBaseInfo) );
+        LOGD("===   device %s:", IP);
+        LOGD("===       interface  : %d", pBaseInfo[0].devInterface);
+        LOGD("===       id         : %s", pBaseInfo[0].id);
+        LOGD("===       vendor     : %s", pBaseInfo[0].vendorName);
+        LOGD("===       model      : %s", pBaseInfo[0].modelName);
+        LOGD("===       HW version : %d.%d.%d"
+                , pBaseInfo[0].hardwareVersion.major
+                , pBaseInfo[0].hardwareVersion.minor
+                , pBaseInfo[0].hardwareVersion.patch
+                );
+        LOGD("===       FW version : %d.%d.%d"
+                , pBaseInfo[0].firmwareVersion.major
+                , pBaseInfo[0].firmwareVersion.minor
+                , pBaseInfo[0].firmwareVersion.patch
+                );
+
     } else {
-        TY_DEVICE_BASE_INFO* pBaseInfo = (TY_DEVICE_BASE_INFO*)buffer;
         if(ID == NULL){
             // Get device info
             ASSERT_OK(TYGetDeviceNumber(&n));

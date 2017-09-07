@@ -60,7 +60,8 @@ enum CameraFrameDataTypes {
   CAMDATA_RIGHT = 0x01,   /**< ir data retrieve from right sensor*/
   CAMDATA_COLOR = 0x02,   /**< rgb data retrieve from rgb sensor*/
   CAMDATA_DEPTH = 0x03,   /**< depth data*/
-  CAMDATA_POINT3D = 0x80  /**< point cloud data*/
+  CAMDATA_HISTO = 0x04,  /**< brightness histogram data*/
+  CAMDATA_POINT3D = 0x80,  /**< point cloud data*/
 };
 
 /**
@@ -238,6 +239,7 @@ typedef enum {
   RESO_MODE_320x240 = 0x01,    /**< 320x240*/
   RESO_MODE_640x480 = 0x02,    /**< 640x480*/
   RESO_MODE_1280x960 = 0xff,   /**< 1280x960*/
+  RESO_MODE_2592x1944 = 0xf0,   /**< 2592x1944*/
 } ResolutionModes;
 
 /**

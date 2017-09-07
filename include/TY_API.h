@@ -64,8 +64,13 @@
 
 #ifdef _WIN32
 #  include <Windows.h>
+#ifdef TY_WIN32_BUILD_STATIC
+#  define TY_DLLIMPORT
+#  define TY_DLLEXPORT
+#else
 #  define TY_DLLIMPORT      __declspec(dllimport)
 #  define TY_DLLEXPORT      __declspec(dllexport)
+#endif
 #  define TY_STDC           __stdcall
 #  define TY_CDEC           __cdecl
 #else
@@ -150,6 +155,7 @@ typedef enum TY_DEVICE_COMPONENT_LIST
     TY_COMPONENT_RGB_CAM_RIGHT  = 0x00200000, ///< Right RGB camera
     TY_COMPONENT_LASER          = 0x00400000, ///< Laser
     TY_COMPONENT_IMU            = 0x00800000, ///< Inertial Measurement Unit
+    TY_COMPONENT_BRIGHT_HISTO   = 0x01000000, ///< virtual component for brightness histogram of ir 
 
     TY_COMPONENT_RGB_CAM        = TY_COMPONENT_RGB_CAM_LEFT /// Some device has only one RGB camera, map it to left
 }TY_DEVICE_COMPONENT_LIST;
@@ -203,6 +209,7 @@ typedef enum TY_FEATURE_ID_LIST
     TY_INT_LASER_POWER          = 0x500 | TY_FEATURE_INT,  ///< Laser power level 
 
     TY_BOOL_UNDISTORTION        = 0x510 | TY_FEATURE_BOOL, ///< Output undistorted image
+    TY_BOOL_BRIGHTNESS_HISTOGRAM    = 0x511 | TY_FEATURE_BOOL, ///< Output bright histogram 
 
     TY_INT_R_GAIN               = 0x520 | TY_FEATURE_INT,  ///< Gain of R channel
     TY_INT_G_GAIN               = 0x521 | TY_FEATURE_INT,  ///< Gain of G channel
@@ -217,6 +224,7 @@ typedef enum TY_IMAGE_MODE_LIST
     TY_IMAGE_MODE_320x240       = (320<<12)+240, ///< 1310960
     TY_IMAGE_MODE_640x480       = (640<<12)+480, ///< 2621920
     TY_IMAGE_MODE_1280x960      = (1280<<12)+960,///< 5243840
+    TY_IMAGE_MODE_2592x1944     = (2592<<12)+1944,///< 10618776 
 }TY_IMAGE_MODE_LIST;
 typedef int32_t TY_IMAGE_MODE;
 
@@ -274,6 +282,7 @@ typedef enum TY_PIXEL_FORMAT_LIST
     TY_PIXEL_FORMAT_YUV422      = (TY_PIXEL_COLOR   | TY_PIXEL_16BIT | 0x0011), //0x20100011, YVYU
     TY_PIXEL_FORMAT_YVYU        =  TY_PIXEL_FORMAT_YUV422                     , //0x20100011, YVYU
     TY_PIXEL_FORMAT_YUYV        = (TY_PIXEL_COLOR   | TY_PIXEL_16BIT | 0x0012), //0x20100012, YUYV
+    TY_PIXEL_FORMAT_JPEG        = (TY_PIXEL_COLOR   | TY_PIXEL_24BIT | 0x0013), //0x20180013, JPEG
     TY_PIXEL_FORMAT_DEPTH16     = (TY_PIXEL_DEPTH   | TY_PIXEL_16BIT | 0x0020), //0x30100020
     TY_PIXEL_FORMAT_FPOINT3D    = (TY_PIXEL_POINT3D | TY_PIXEL_96BIT | 0x0030), //0x40600030
 }TY_PIXEL_FORMAT_LIST;
@@ -377,7 +386,7 @@ typedef struct
 ///camera distortion parameters
 typedef struct
 {
-    float data[12];
+    float data[12];///<k1,k2,p1,p2,k3,k4,k5,k6,s1,s2,s3,s4
 }TY_CAMERA_DISTORTION;
 
 

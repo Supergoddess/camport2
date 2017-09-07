@@ -240,6 +240,9 @@ public:
                 buff->timestamp = m_frame.image[i].timestamp;
                 buff->frame_index = 0;
                 buff->data = (unsigned char*)m_frame.image[i].buffer;
+                //YUYV or YVYU ? need one pixel memory space for store original format for old app.
+                //highly recommmand to use new API
+                buff->data[0] = m_frame.image[i].pixelFormat;
                 return CAMSTATUS_SUCCESS;
             }
         }
@@ -326,6 +329,9 @@ public:
                         return sizeof(int);
                     case TY_IMAGE_MODE_1280x960:
                         *out = RESO_MODE_1280x960;
+                        return sizeof(int);
+                    case TY_IMAGE_MODE_2592x1944:
+                        *out = RESO_MODE_2592x1944;
                         return sizeof(int);
                 }
                 return CAMSTATUS_NOTSUPPORT;
@@ -495,6 +501,7 @@ public:
         assert_ok(TYEnableComponents(m_hDevice, enabledComponents));
         int32_t bufferSize;
         assert_ok(TYGetFrameBufferSize(m_hDevice, &bufferSize));
+        assert(bufferSize > 0);
         m_fb0.resize(bufferSize);
         m_fb1.resize(bufferSize);
         assert_ok(TYEnqueueBuffer(m_hDevice, &m_fb0[0], m_fb0.size()));

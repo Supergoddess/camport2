@@ -197,7 +197,7 @@ int main(int argc, char* argv[])
 
     LOGD("=== Configure components, open point3d cam");
     // int32_t componentIDs = TY_COMPONENT_POINT3D_CAM;
-    int32_t componentIDs = TY_COMPONENT_POINT3D_CAM | TY_COMPONENT_RGB_CAM;
+    int32_t componentIDs = TY_COMPONENT_POINT3D_CAM;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
     int err = TYGetStruct(hDevice, TY_COMPONENT_RGB_CAM, TY_STRUCT_CAM_INTRINSIC, (void*)&m_colorIntrinsic, sizeof(m_colorIntrinsic));

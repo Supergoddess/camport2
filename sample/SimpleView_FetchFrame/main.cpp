@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
         ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
     }
 
+
     int32_t allComps;
     ASSERT_OK( TYGetComponentIDs(hDevice, &allComps) );
     if(allComps & TY_COMPONENT_RGB_CAM) {
@@ -87,7 +88,8 @@ int main(int argc, char* argv[]) {
     }
 
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
+    int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
+    //int32_t componentIDs = TY_COMPONENT_RGB_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
     LOGD("=== Configure feature, set resolution to 640x480.");
@@ -99,6 +101,9 @@ int main(int argc, char* argv[]) {
         int err = TYSetEnum(hDevice, TY_COMPONENT_DEPTH_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480);
         ASSERT(err == TY_STATUS_OK || err == TY_STATUS_NOT_PERMITTED);
     }
+
+    int err = TYSetEnum(hDevice, TY_COMPONENT_RGB_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480);
+    ASSERT(err == TY_STATUS_OK || err == TY_STATUS_NOT_PERMITTED);
 
     LOGD("=== Prepare image buffer");
     int32_t frameSize;

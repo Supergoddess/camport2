@@ -4,7 +4,6 @@
 #include <opencv2/opencv.hpp>
 #include "TY_API.h"
 
-
 static inline const char* colorFormatName(TY_PIXEL_FORMAT fmt)
 {
 #define FORMAT_CASE(a) case (a): return #a
@@ -56,6 +55,11 @@ static inline int parseFrame(const TY_FRAME_DATA& frame, cv::Mat* pDepth
         }
         // get BGR
         if(pColor && frame.image[i].componentID == TY_COMPONENT_RGB_CAM){
+            if (frame.image[i].pixelFormat == TY_PIXEL_FORMAT_JPEG){
+                cv::Mat jpeg(frame.image[i].height, frame.image[i].width
+			    	    , CV_8UC1, frame.image[i].buffer);
+				*pColor = cv::imdecode(jpeg,CV_LOAD_IMAGE_COLOR);
+			}
             if (frame.image[i].pixelFormat == TY_PIXEL_FORMAT_YVYU){
                 cv::Mat yuv(frame.image[i].height, frame.image[i].width
                             , CV_8UC2, frame.image[i].buffer);
