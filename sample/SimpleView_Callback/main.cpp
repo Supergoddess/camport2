@@ -26,11 +26,11 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     }
     fakeLock = true;
 
-    pData->depth.resize(0);
-    pData->leftIR.resize(0);
-    pData->rightIR.resize(0);
-    pData->color.resize(0);
-    pData->point3D.resize(0);
+    pData->depth.release();
+    pData->leftIR.release();
+    pData->rightIR.release();
+    pData->color.release();
+    pData->point3D.release();
 
     parseFrame(*frame, &pData->depth, &pData->leftIR, &pData->rightIR
             , &pData->color, &pData->point3D);
@@ -43,6 +43,11 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
 
     LOGD("=== Callback: Re-enqueue buffer(%p, %d)", frame->userBuffer, frame->bufferSize);
     ASSERT_OK( TYEnqueueBuffer(pData->hDevice, frame->userBuffer, frame->bufferSize) );
+}
+
+void deviceStatusCallback(TY_DEVICE_STATUS *device_status, void *userdata)
+{
+    LOGD("=== Device Status Calllback: sys_reset %d, phy_reset %d", device_status->sysResetCounter, device_status->phyResetCounter);
 }
 
 int main(int argc, char* argv[])
@@ -126,7 +131,7 @@ int main(int argc, char* argv[])
     LOGD("     - Enqueue buffer (%p, %d)", frameBuffer[1], frameSize);
     ASSERT_OK( TYEnqueueBuffer(hDevice, frameBuffer[1], frameSize) );
 
-    LOGD("=== Register callback");
+    LOGD("=== Register frame callback");
     LOGD("Note: Callback may block internal data receiving,");
     LOGD("      so that user should not do long time work in callback.");
     LOGD("      To avoid copying data, we pop the framebuffer from buffer queue and");
@@ -139,6 +144,11 @@ int main(int argc, char* argv[])
     cb_data.saveFrame = false;
     cb_data.saveIdx = 0;
     ASSERT_OK( TYRegisterCallback(hDevice, frameCallback, &cb_data) );
+
+    LOGD("=== Register device status callback");
+    LOGD("Note: Callback may block internal data receiving,");
+    LOGD("      so that user should not do long time work in callback.");
+    ASSERT_OK(TYRegisterDeviceStatusCallback(hDevice, deviceStatusCallback, NULL));
 
     LOGD("=== Disable trigger mode");
     ASSERT_OK( TYSetBool(hDevice, TY_COMPONENT_DEVICE, TY_BOOL_TRIGGER_MODE, false) );

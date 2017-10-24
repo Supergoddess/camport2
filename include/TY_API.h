@@ -421,6 +421,16 @@ typedef struct TY_FRAME_DATA
 typedef void (*TY_FRAME_CALLBACK) (TY_FRAME_DATA*, void* userdata);
 
 
+typedef struct TY_DEVICE_STATUS
+{
+    int32_t        sysResetCounter;
+    int32_t        phyResetCounter;
+}TY_DEVICE_STATUS;
+
+
+typedef void (*TY_DEVICE_STATUS_CALLBACK)(TY_DEVICE_STATUS*, void* userdata);
+
+
 //------------------------------------------------------------------------------
 // inlines
 //------------------------------------------------------------------------------
@@ -637,6 +647,15 @@ TY_CAPI TYSendSoftTrigger         (TY_DEV_HANDLE hDevice);
 /// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
 /// @retval TY_STATUS_BUSY      Device is capturing.
 TY_CAPI TYRegisterCallback        (TY_DEV_HANDLE hDevice, TY_FRAME_CALLBACK callback, void* userdata);
+
+/// @brief Register device status callback. Register NULL to clean callback.
+/// @param  [in]  hDevice       Device handle.
+/// @param  [in]  callback      Callback function.
+/// @param  [in]  userdata      User private data.
+/// @retval TY_STATUS_OK        Succeed.
+/// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
+/// @retval TY_STATUS_BUSY      Device is capturing.
+TY_CAPI TYRegisterDeviceStatusCallback(TY_DEV_HANDLE hDevice, TY_DEVICE_STATUS_CALLBACK callback, void* userdata);
 
 /// @brief Fetch one frame.
 /// @param  [in]  hDevice       Device handle.
@@ -950,6 +969,22 @@ TY_CAPI TYDepthToWorld            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* dept
 /// @retval TY_STATUS_INVALID_PARAMETER worldPaddingBytes is not 4x.
 TY_CAPI TYWorldToDepth            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
 
+/// @brief Correct image for lens distortion
+/// Format of source image data should be  TY_PIXEL_FORMAT_MONO or  TY_PIXEL_FORMAT_RGB
+/// Output buffer is allocated by caller.
+/// For IR image undistortion, enable TY_BOOL_UNDISTORTION  to get better performance.
+///
+/// @param  [in]  cameraIntrinsic       input image camera intrinsic parameters
+/// @param  [in]  cameraDistortion      input image camera distortion parameters
+/// @param  [in]  cameraNewIntrinsic    output image camera intrinsic , cameraIntrinsic will be used if is NULL
+/// @param  [in]  srcImage              input image buffer
+/// @param  [out] dstImage              Output image buffer
+///
+/// @retval TY_STATUS_OK                Succeed.
+/// @retval TY_STATUS_NULL_POINTER      buffer is NULL.
+/// @retval TY_STATUS_INVALID_PARAMETER parameter is invalid.
+/// @retval TY_STATUS_ERROR             internal error
+TY_CAPI             TYUndistortImage          (const TY_CAMERA_INTRINSIC *cameraIntrinsic, const TY_CAMERA_DISTORTION* cameraDistortion,const TY_CAMERA_INTRINSIC *cameraNewIntrinsic,const TY_IMAGE_DATA *srcImage, TY_IMAGE_DATA *dstImage);
 
 //------------------------------------------------------------------------------
 //  Version check
@@ -1022,6 +1057,7 @@ TY_CAPI             TYDepthToWorld            (TY_DEV_HANDLE hDevice, const TY_V
 TY_CAPI             TYWorldToDepth            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
 
 TY_CAPI             TYRegisterWorldToColor    (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount, uint16_t* outDepthBuffer, int32_t bufferSize);
+TY_CAPI             TYUndistortImage          (const TY_CAMERA_INTRINSIC *cameraIntrinsic, const TY_CAMERA_DISTORTION* cameraDistortion,const TY_CAMERA_INTRINSIC *cameraNewIntrinsic,const TY_IMAGE_DATA *srcImage, TY_IMAGE_DATA *dstImage);
 
 
 #endif // TY_API_H_

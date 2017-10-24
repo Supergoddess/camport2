@@ -4,6 +4,42 @@ static char buffer[1024 * 1024];
 static int  n;
 static volatile bool exit_main;
 
+static int fps_counter = 0;
+static clock_t fps_tm = 0;
+ 
+#ifdef _WIN32
+int get_fps() {
+   const int kMaxCounter = 200;
+   fps_counter++;
+   if (fps_counter < kMaxCounter) {
+     return -1;
+   }
+   int elapse = (clock() - fps_tm);
+   int v = (int)(((float)fps_counter) / elapse * CLOCKS_PER_SEC);
+   fps_tm = clock();
+  
+   fps_counter = 0;                                                                                           
+   return v;
+ }
+#else
+int get_fps() {
+  const int kMaxCounter = 200;
+  struct timeval start;
+  fps_counter++;
+  if (fps_counter < kMaxCounter) {
+    return -1;
+  }
+
+  gettimeofday(&start, NULL);
+  int elapse = start.tv_sec * 1000 + start.tv_usec / 1000 - fps_tm;
+  int v = (int)(((float)fps_counter) / elapse * 1000);
+  gettimeofday(&start, NULL);
+  fps_tm = start.tv_sec * 1000 + start.tv_usec / 1000;
+
+  fps_counter = 0;
+  return v;
+}
+#endif
 
 struct CallbackData {
     int             index;
@@ -14,6 +50,10 @@ struct CallbackData {
 void frameHandler(TY_FRAME_DATA* frame, void* userdata) {
     CallbackData* pData = (CallbackData*) userdata;
     LOGD("=== Get frame %d", ++pData->index);
+
+    int ret = get_fps();
+	if (ret > 0)
+        printf("fps: %d\n", ret);
 
     cv::Mat depth, irl, irr, color;
     parseFrame(*frame, &depth, &irl, &irr, &color, 0);
@@ -88,7 +128,7 @@ int main(int argc, char* argv[]) {
     }
 
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
+    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
     //int32_t componentIDs = TY_COMPONENT_RGB_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
@@ -101,9 +141,6 @@ int main(int argc, char* argv[]) {
         int err = TYSetEnum(hDevice, TY_COMPONENT_DEPTH_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480);
         ASSERT(err == TY_STATUS_OK || err == TY_STATUS_NOT_PERMITTED);
     }
-
-    int err = TYSetEnum(hDevice, TY_COMPONENT_RGB_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480);
-    ASSERT(err == TY_STATUS_OK || err == TY_STATUS_NOT_PERMITTED);
 
     LOGD("=== Prepare image buffer");
     int32_t frameSize;

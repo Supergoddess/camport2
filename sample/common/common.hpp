@@ -47,7 +47,7 @@
   }
 #else
 # include <sys/time.h>
-  static inline int32_t getSystemTime()
+  inline int32_t getSystemTime()
   {
       struct timeval tv;
       gettimeofday(&tv, NULL);

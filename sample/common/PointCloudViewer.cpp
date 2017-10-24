@@ -3,13 +3,13 @@
 #include <stdio.h>
 
 #ifdef HAVE_PCL
-#  include <pcl/ModelCoefficients.h>
-#  include <pcl/io/pcd_io.h>
-#  include <pcl/point_types.h>
-#  include <pcl/sample_consensus/method_types.h>
-#  include <pcl/sample_consensus/model_types.h>
-#  include <pcl/segmentation/sac_segmentation.h>
-#  include <pcl/visualization/cloud_viewer.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/visualization/cloud_viewer.h>
 
 static const std::string helpText[] = {
     "Left Button + Slide  Left/Right",
@@ -125,7 +125,7 @@ void PointCloudViewer::show(const cv::Mat &pointCloud, const std::string &window
 static void writePC_XYZ(const cv::Point3f* pnts, size_t n, FILE* fp)
 {
     for(size_t i = 0; i < n; i++){
-        if(!isnan(pnts[i].x)){
+        if(!std::isnan(pnts[i].x)){
             fprintf(fp, "%f %f %f 0 0 0\n", pnts[i].x, pnts[i].y, pnts[i].z);
         }
     }
