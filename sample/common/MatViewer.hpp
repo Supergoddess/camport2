@@ -31,20 +31,57 @@ inline void OpencvViewer::drawText(cv::Mat& img, const std::string& text
 
 
 
+class GraphicItem
+{
+public:
+    GraphicItem() : _id(++globalID), _color(255,255,255) {}
+    virtual ~GraphicItem() {}
+
+    void setColor(const cv::Scalar& color) { _color = color; }
+
+    int id() const { return _id; }
+    cv::Scalar color() const { return _color; }
+    virtual void draw(cv::Mat& img) = 0;
+
+private:
+    static int globalID;
+
+    int         _id;
+    cv::Scalar  _color;
+};
+
+class GraphicRectangleItem : public GraphicItem
+{
+public:
+    cv::Rect _rect;
+
+    GraphicRectangleItem() : GraphicItem(), _rect() {}
+    GraphicRectangleItem(const cv::Rect& rect) : GraphicItem(), _rect(rect) {}
+    virtual ~GraphicRectangleItem() {}
+    virtual void draw(cv::Mat& img){ cv::rectangle(img, _rect, color()); }
+};
+
+
 class DepthViewer : public OpencvViewer
 {
 public:
     static std::string depthStringAtLoc(const cv::Mat& img, const cv::Point pnt);
+
+    void addGraphicItem(GraphicItem* item) {
+                    _items.insert(std::make_pair(item->id(), item));}
+    void delGraphicItem(GraphicItem* item) { _items.erase(item->id()); }
 
     virtual void show(const std::string& win, const cv::Mat& depthImage);
     virtual void onMouseCallback(cv::Mat& img, int event, const cv::Point pnt);
 
 private:
     void drawFixLoc(cv::Mat& img);
+    void drawItems(cv::Mat& img);
 
     DepthRender _render;
     cv::Mat _img;
     cv::Point   _fixLoc;
+    std::map<int, GraphicItem*> _items;
 };
 
 

@@ -119,7 +119,7 @@ private:
             }
     void BuildColorTable(){
                 _color_lookup_table.resize(256);
-                cv::Scalar from(0, 0, 0xff), to(0, 200, 255);
+                cv::Scalar from(50, 0, 0xff), to(50, 200, 255);
                 for (int i = 0; i < 128; i++) {
                     float a = (float)i / 128;
                     cv::Scalar &v = _color_lookup_table[i];
@@ -193,7 +193,7 @@ private:
                     max_val = 2000;
                     return;
                 }
-                const int delta = total_num * 0.10;
+                const int delta = total_num * 0.01;
                 int sum = 0;
                 min_val = hist.begin()->first;
                 for (std::map<short, int>::iterator it = hist.begin(); it != hist.end();it++){

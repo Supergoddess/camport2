@@ -83,14 +83,27 @@ void frameHandler(TY_FRAME_DATA* frame, void* userdata) {
 int main(int argc, char* argv[]) {
     const char* IP = NULL;
     TY_DEV_HANDLE hDevice;
+    int32_t color, ir, depth; 
+    color = ir = depth = 1;
 
     for(int i = 1; i < argc; i++) {
         if(strcmp(argv[i], "-ip") == 0) {
             IP = argv[++i];
+        } else if(strcmp(argv[i], "-color=off") == 0) {
+            color = 0; 
+        } else if(strcmp(argv[i], "-depth=off") == 0) {
+            depth = 0;
+        } else if(strcmp(argv[i], "-ir=off") == 0) {
+            ir = 0;
         } else if(strcmp(argv[i], "-h") == 0) {
-            LOGI("Usage: SimpleView_Callback [-h] [-ip <IP>]");
+            LOGI("Usage: SimpleView_FetchFrame [-h] [-ip <IP>]");
             return 0;
         }
+    }
+
+    if (!color && !depth && !ir) {
+        LOGD("=== At least one component need to be on");
+        return -1;
     }
 
     LOGD("=== Init lib");
@@ -119,18 +132,31 @@ int main(int argc, char* argv[]) {
         ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
     }
 
+#ifdef DEVELOPER_MODE
+    LOGD("=== Enter Developer Mode");
+    ASSERT_OK(TYEnterDeveloperMode(hDevice));
+#endif
 
     int32_t allComps;
     ASSERT_OK( TYGetComponentIDs(hDevice, &allComps) );
-    if(allComps & TY_COMPONENT_RGB_CAM) {
+    if(allComps & TY_COMPONENT_RGB_CAM  && color) {
         LOGD("=== Has RGB camera, open RGB cam");
         ASSERT_OK( TYEnableComponents(hDevice, TY_COMPONENT_RGB_CAM) );
     }
 
+    int32_t componentIDs = 0;
     LOGD("=== Configure components, open depth cam");
-    int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT | TY_COMPONENT_IR_CAM_RIGHT;
-    //int32_t componentIDs = TY_COMPONENT_RGB_CAM | TY_COMPONENT_IR_CAM_LEFT;
-    ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
+    if (depth) {
+        componentIDs = TY_COMPONENT_DEPTH_CAM;  
+    }
+    
+    if (ir) {
+        componentIDs |= TY_COMPONENT_IR_CAM_LEFT; 
+    }
+    
+    if (depth || ir) {
+        ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
+    }
 
     LOGD("=== Configure feature, set resolution to 640x480.");
     LOGD("Note: DM460 resolution feature is in component TY_COMPONENT_DEVICE,");
@@ -189,6 +215,10 @@ int main(int argc, char* argv[]) {
         } else {
             frameHandler(&frame, &cb_data);
         }
+
+#ifdef DEVELOPER_MODE
+        DEVELOPER_MODE_PRINT();
+#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

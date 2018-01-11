@@ -46,7 +46,6 @@ int main(int argc, char* argv[])
         }
     }
     
-    int nDevices;
     bool needKeyStrike = false;
 
     LOGD("=== Init lib");
@@ -74,6 +73,11 @@ int main(int argc, char* argv[])
         LOGD("=== Open device 0");
         ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
     }
+
+#ifdef DEVELOPER_MODE
+    LOGD("=== Enter Developer Mode");
+    ASSERT_OK(TYEnterDeveloperMode(hDevice));
+#endif
 
     int32_t allComps;
     ASSERT_OK( TYGetComponentIDs(hDevice, &allComps) );
@@ -159,6 +163,10 @@ int main(int argc, char* argv[])
             default:
                 LOGD("Pressed key %d", key);
         }
+
+#ifdef DEVELOPER_MODE
+        DEVELOPER_MODE_PRINT();
+#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

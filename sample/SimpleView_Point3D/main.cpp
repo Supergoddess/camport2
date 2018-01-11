@@ -127,6 +127,11 @@ int main(int argc, char* argv[])
         LOGD("=== Open device 0");
         ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
     }
+    
+#ifdef DEVELOPER_MODE
+    LOGD("=== Enter Developer Mode");
+    ASSERT_OK(TYEnterDeveloperMode(hDevice));
+#endif
 
     LOGD("=== Configure components, open point3d cam");
     // int32_t componentIDs = TY_COMPONENT_POINT3D_CAM;
@@ -199,6 +204,10 @@ int main(int argc, char* argv[])
         }
 
         frameHandler(&frame, &cb_data);
+        
+#ifdef DEVELOPER_MODE
+        DEVELOPER_MODE_PRINT();
+#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

@@ -45,9 +45,11 @@ void frameCallback(TY_FRAME_DATA* frame, void* userdata)
     ASSERT_OK( TYEnqueueBuffer(pData->hDevice, frame->userBuffer, frame->bufferSize) );
 }
 
-void deviceStatusCallback(TY_DEVICE_STATUS *device_status, void *userdata)
+void eventCallback(TY_EVENT_INFO *event_info, void *userdata)
 {
-    LOGD("=== Device Status Calllback: sys_reset %d, phy_reset %d", device_status->sysResetCounter, device_status->phyResetCounter);
+    if (event_info->eventId == TY_EVENT_DEVICE_OFFLINE) {
+        LOGD("=== Event Calllback: Device Offline!");
+    }
 }
 
 int main(int argc, char* argv[])
@@ -97,6 +99,11 @@ int main(int argc, char* argv[])
         ASSERT_OK( TYOpenDevice(ID, &hDevice) );
     }
 
+#ifdef DEVELOPER_MODE
+    LOGD("=== Enter Developer Mode");
+    ASSERT_OK(TYEnterDeveloperMode(hDevice));
+#endif
+
     int32_t allComps;
     ASSERT_OK( TYGetComponentIDs(hDevice, &allComps) );
     if(allComps & TY_COMPONENT_RGB_CAM){
@@ -110,9 +117,6 @@ int main(int argc, char* argv[])
     // int32_t componentIDs = TY_COMPONENT_DEPTH_CAM | TY_COMPONENT_IR_CAM_LEFT;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
 
-    LOGD("=== Configure feature, set resolution to 640x480.");
-    LOGD("Note: DM460 resolution feature is in component TY_COMPONENT_DEVICE,");
-    LOGD("      other device may lays in some other components.");
     int err = TYSetEnum(hDevice, TY_COMPONENT_DEPTH_CAM, TY_ENUM_IMAGE_MODE, TY_IMAGE_MODE_640x480);
     ASSERT(err == TY_STATUS_OK || err == TY_STATUS_NOT_PERMITTED);
 
@@ -132,10 +136,7 @@ int main(int argc, char* argv[])
     ASSERT_OK( TYEnqueueBuffer(hDevice, frameBuffer[1], frameSize) );
 
     LOGD("=== Register frame callback");
-    LOGD("Note: Callback may block internal data receiving,");
-    LOGD("      so that user should not do long time work in callback.");
-    LOGD("      To avoid copying data, we pop the framebuffer from buffer queue and");
-    LOGD("      give it back to user, user should call TYEnqueueBuffer to re-enqueue it.");
+    LOGD("Note:  user should call TYEnqueueBuffer to re-enqueue frame buffer.");
     DepthRender render;
     CallbackData cb_data;
     cb_data.index = 0;
@@ -145,10 +146,10 @@ int main(int argc, char* argv[])
     cb_data.saveIdx = 0;
     ASSERT_OK( TYRegisterCallback(hDevice, frameCallback, &cb_data) );
 
-    LOGD("=== Register device status callback");
+    LOGD("=== Register event callback");
     LOGD("Note: Callback may block internal data receiving,");
     LOGD("      so that user should not do long time work in callback.");
-    ASSERT_OK(TYRegisterDeviceStatusCallback(hDevice, deviceStatusCallback, NULL));
+    ASSERT_OK(TYRegisterEventCallback(hDevice, eventCallback, NULL));
 
     LOGD("=== Disable trigger mode");
     ASSERT_OK( TYSetBool(hDevice, TY_COMPONENT_DEVICE, TY_BOOL_TRIGGER_MODE, false) );
@@ -182,9 +183,10 @@ int main(int argc, char* argv[])
             LOGI(">>>> save frame %d", cb_data.saveIdx);
             char f[32];
             sprintf(f, "%d.img", cb_data.saveIdx++);
-            FILE* fp = fopen(f, "w");
+            FILE* fp = fopen(f, "wb");
             fwrite(cb_data.depth.data, 2, cb_data.depth.size().area(), fp);
             fwrite(cb_data.color.data, 3, cb_data.color.size().area(), fp);
+
             // fwrite(cb_data.leftIR.data, 1, cb_data.leftIR.size().area(), fp);
             // fwrite(cb_data.rightIR.data, 1, cb_data.rightIR.size().area(), fp);
             fclose(fp);
@@ -207,6 +209,10 @@ int main(int argc, char* argv[])
             default:
                 LOGD("Unmapped key %d", key);
         }
+
+#ifdef DEVELOPER_MODE
+        DEVELOPER_MODE_PRINT();
+#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

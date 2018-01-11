@@ -29,6 +29,9 @@ void OpencvViewer::onMouseCallback(cv::Mat& img, int event, const cv::Point pnt)
 ///////////////////////////// DepthViewer ///////////////////////////////////////
 
 
+int GraphicItem::globalID = 0;
+
+
 std::string DepthViewer::depthStringAtLoc(const cv::Mat& img, const cv::Point pnt)
 {
     uint16_t val = img.at<uint16_t>(img.rows/2, img.cols/2);
@@ -50,6 +53,7 @@ void DepthViewer::show(const std::string& win, const cv::Mat& img)
     drawText(colorImg, text, cv::Point(0,20), 0.5, cv::Scalar(0,255,0), 2);
 
     drawFixLoc(colorImg);
+    drawItems(colorImg);
     
     OpencvViewer::show(win, colorImg);
 }
@@ -76,4 +80,12 @@ void DepthViewer::drawFixLoc(cv::Mat& img)
     char str[64];
     sprintf(str, "Depth at (%d,%d): %d", _fixLoc.x, _fixLoc.y, _img.at<uint16_t>(_fixLoc));
     drawText(img, str, cv::Point(0,40), 0.5, cv::Scalar(0,255,0), 2);
+}
+
+void DepthViewer::drawItems(cv::Mat& img)
+{
+    for(std::map<int, GraphicItem*>::iterator it = _items.begin()
+            ; it != _items.end(); it++){
+        it->second->draw(img);
+    }
 }

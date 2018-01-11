@@ -102,8 +102,8 @@
 //  Definitions
 //------------------------------------------------------------------------------
 #define TY_LIB_VERSION_MAJOR       2
-#define TY_LIB_VERSION_MINOR       5
-#define TY_LIB_VERSION_PATCH       0
+#define TY_LIB_VERSION_MINOR       6 
+#define TY_LIB_VERSION_PATCH       3 
 
 
 //------------------------------------------------------------------------------
@@ -130,10 +130,17 @@ typedef enum TY_STATUS_LIST
     TY_STATUS_BUSY              = -1016,
     TY_STATUS_IDLE              = -1017,
     TY_STATUS_NO_DATA           = -1018,
-    TY_STATUS_NULL_POINTER      = -1020
+    TY_STATUS_NO_BUFFER         = -1019,
+    TY_STATUS_NULL_POINTER      = -1020,
+    TY_STATUS_READONLY_FEATURE  = -1021
 }TY_STATUS_LIST;
 typedef int32_t TY_STATUS;
 
+typedef enum TY_EVENT_LIST
+{
+    TY_EVENT_DEVICE_OFFLINE     = -2001,
+}TY_ENENT_LIST;
+typedef int32_t TY_EVENT;
 
 //------------------------------------------------------------------------------
 //  Device Handle
@@ -207,6 +214,7 @@ typedef enum TY_FEATURE_ID_LIST
     TY_BOOL_AUTO_AWB            = 0x304 | TY_FEATURE_BOOL, ///< Auto white balance
 
     TY_INT_LASER_POWER          = 0x500 | TY_FEATURE_INT,  ///< Laser power level 
+    TY_BOOL_LASER_AUTO_CTRL     = 0x501 | TY_FEATURE_BOOL,  ///< Laser auto ctrl
 
     TY_BOOL_UNDISTORTION        = 0x510 | TY_FEATURE_BOOL, ///< Output undistorted image
     TY_BOOL_BRIGHTNESS_HISTOGRAM    = 0x511 | TY_FEATURE_BOOL, ///< Output bright histogram 
@@ -214,6 +222,8 @@ typedef enum TY_FEATURE_ID_LIST
     TY_INT_R_GAIN               = 0x520 | TY_FEATURE_INT,  ///< Gain of R channel
     TY_INT_G_GAIN               = 0x521 | TY_FEATURE_INT,  ///< Gain of G channel
     TY_INT_B_GAIN               = 0x522 | TY_FEATURE_INT,  ///< Gain of B channel
+    
+    TY_STRUCT_WORK_MODE      = 0x523 | TY_FEATURE_STRUCT,  ///< mode of trigger 
 
 }TY_FEATURE_ID_LIST;
 typedef int32_t TY_FEATURE_ID;
@@ -288,6 +298,13 @@ typedef enum TY_PIXEL_FORMAT_LIST
 }TY_PIXEL_FORMAT_LIST;
 typedef int32_t TY_PIXEL_FORMAT;
 
+typedef enum TY_TRIGGER_MODE_LIST
+{
+    TY_TRIGGER_MODE_CONTINUES        = 0, //not trigger mode, continues mode
+    TY_TRIGGER_MODE_TRIG_SLAVE       = 1, //slave mode
+    TY_TRIGGER_MODE_M_SIG            = 2, //master mode 1, trigger once got a trigger cmd
+    TY_TRIGGER_MODE_M_PER            = 3, //master mode 2, trigger period, with const frame rate
+}TY_TRIGGER_MODE_LIST;
 
 //------------------------------------------------------------------------------
 //  Struct
@@ -389,13 +406,19 @@ typedef struct
     float data[12];///<k1,k2,p1,p2,k3,k4,k5,k6,s1,s2,s3,s4
 }TY_CAMERA_DISTORTION;
 
+typedef struct TY_TRIGGER_MODE
+{
+    int16_t  mode;
+    int8_t   fps;
+}TY_TRIGGER_MODE;
+
 
 //------------------------------------------------------------------------------
 //  Buffer & Callback
 //------------------------------------------------------------------------------
 typedef struct TY_IMAGE_DATA
 {
-    int32_t timestamp;              ///< Timestamp in milliseconds
+    uint64_t timestamp;             ///< Timestamp in microseconds
     int32_t imageIndex;             ///< image index used in trigger mode
     int32_t status;                 ///< Status of this buffer
     int32_t componentID;            ///< Where current data come from
@@ -417,18 +440,15 @@ typedef struct TY_FRAME_DATA
     TY_IMAGE_DATA   image[10];      ///< Buffer data, max to 10 images per frame, each buffer data could be an image or something else.
 }TY_FRAME_DATA;
 
-
 typedef void (*TY_FRAME_CALLBACK) (TY_FRAME_DATA*, void* userdata);
 
 
-typedef struct TY_DEVICE_STATUS
+typedef struct TY_EVENT_INFO
 {
-    int32_t        sysResetCounter;
-    int32_t        phyResetCounter;
-}TY_DEVICE_STATUS;
+    TY_EVENT        eventId;
+}TY_EVENT_INFO;
 
-
-typedef void (*TY_DEVICE_STATUS_CALLBACK)(TY_DEVICE_STATUS*, void* userdata);
+typedef void (*TY_EVENT_CALLBACK)(TY_EVENT_INFO*, void* userdata);
 
 
 //------------------------------------------------------------------------------
@@ -530,6 +550,12 @@ TY_CAPI TYOpenDeviceWithIP        (const char* IP, TY_DEV_HANDLE* deviceHandle);
 /// @retval TY_STATUS_IDLE              Device has been closed.
 TY_CAPI TYCloseDevice             (TY_DEV_HANDLE hDevice);
 
+/// @brief Enable developer mode by device handle.
+/// @param  [in]  hDevice       Device handle.
+/// @retval TY_STATUS_OK        Succeed.
+/// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
+/// @retval TY_STATUS_DEVICE_ERROR      Enter developer mode failed.
+TY_CAPI TYEnterDeveloperMode      (TY_DEV_HANDLE hDevice);
 
 
 /// @brief Get base info of the open device.
@@ -655,7 +681,7 @@ TY_CAPI TYRegisterCallback        (TY_DEV_HANDLE hDevice, TY_FRAME_CALLBACK call
 /// @retval TY_STATUS_OK        Succeed.
 /// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
 /// @retval TY_STATUS_BUSY      Device is capturing.
-TY_CAPI TYRegisterDeviceStatusCallback(TY_DEV_HANDLE hDevice, TY_DEVICE_STATUS_CALLBACK callback, void* userdata);
+TY_CAPI TYRegisterEventCallback   (TY_DEV_HANDLE hDevice, TY_EVENT_CALLBACK callback, void* userdata);
 
 /// @brief Fetch one frame.
 /// @param  [in]  hDevice       Device handle.
@@ -1008,13 +1034,14 @@ TY_EXTC TY_EXPORT const char* TY_STDC TYErrorString (TY_STATUS errorID);
 inline TY_STATUS    TYInitLib                 (void);
 TY_CAPI             TYDeinitLib               (void);
 TY_CAPI             TYLibVersion              (TY_VERSION_INFO* version);
-
+TY_EXTC TY_EXPORT   const char*         TYGetFirmwareVer          (const char* deviceID);
 TY_CAPI             TYGetDeviceNumber         (int32_t* deviceNumber);
 TY_CAPI             TYGetDeviceList           (TY_DEVICE_BASE_INFO* deviceInfos, int32_t bufferCount, int32_t* filledDeviceCount);
 
 TY_CAPI             TYOpenDevice              (const char* deviceID, TY_DEV_HANDLE* outDeviceHandle);
 TY_CAPI             TYOpenDeviceWithIP        (const char* IP, TY_DEV_HANDLE* outDeviceHandle);
 TY_CAPI             TYCloseDevice             (TY_DEV_HANDLE hDevice);
+TY_CAPI             TYEnterDeveloperMode      (TY_DEV_HANDLE hDevice);
 
 TY_CAPI             TYGetDeviceInfo           (TY_DEV_HANDLE hDevice, TY_DEVICE_BASE_INFO* info);
 TY_CAPI             TYGetComponentIDs         (TY_DEV_HANDLE hDevice, int32_t* componentIDs);
@@ -1031,6 +1058,7 @@ TY_CAPI             TYStopCapture             (TY_DEV_HANDLE hDevice);
 TY_CAPI             TYIsCapturing             (TY_DEV_HANDLE hDevice, bool* isCapturing);
 TY_CAPI             TYSendSoftTrigger         (TY_DEV_HANDLE hDevice);
 TY_CAPI             TYRegisterCallback        (TY_DEV_HANDLE hDevice, TY_FRAME_CALLBACK callback, void* userdata);
+TY_CAPI             TYRegisterEventCallback   (TY_DEV_HANDLE hDevice, TY_EVENT_CALLBACK callback, void* userdata);
 TY_CAPI             TYFetchFrame              (TY_DEV_HANDLE hDevice, TY_FRAME_DATA* frame, int32_t timeout);
 
 TY_CAPI             TYGetFeatureInfo          (TY_DEV_HANDLE hDevice, TY_COMPONENT_ID componentID, TY_FEATURE_ID featureID, TY_FEATURE_INFO* featureInfo);

@@ -139,8 +139,6 @@ void dumpComponentFeatures(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID)
 
 void dumpAllComponentFeatures(TY_DEV_HANDLE handle, int32_t compIDs)
 {
-    bool hasFeature;
-
     LOGD("=== Dump all components and features:");
     DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_DEVICE);
     DUMP_COMPONENT(handle, compIDs, TY_COMPONENT_DEPTH_CAM);

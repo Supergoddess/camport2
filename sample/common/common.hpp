@@ -82,6 +82,24 @@
 #  define MSLEEP(x)     usleep((x)*1000)
 #endif
 
+// Please undefine this macro in the final product
+#define DEVELOPER_MODE
+
+#define DEVELOPER_MODE_PRINT() do { \
+    static int32_t last_warning_time = getSystemTime(); \
+    if (getSystemTime() - last_warning_time > 5000) { \
+      printf("\n\n**********************************************************************\n"); \
+      printf("WARNING:\n"); \
+      printf("    Your device has been set to DEVELOPER mode by TYEnterDeveloperMode.\n"); \
+      printf("\n"); \
+      printf("    For convenience of your debug, \n"); \
+      printf("    We disable some features and may affect the stability of the device.\n"); \
+      printf("\n"); \
+      printf("    Undefine macro DEVELOPER_MODE in your final product!\n"); \
+      printf("**********************************************************************\n\n"); \
+      last_warning_time = getSystemTime(); \
+    } \
+  }while(0) 
 
 #include "Utils.hpp"
 #include "DepthRender.hpp"

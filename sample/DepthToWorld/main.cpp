@@ -86,6 +86,11 @@ int main()
     TY_DEV_HANDLE hDevice;
     ASSERT_OK( TYOpenDevice(pBaseInfo[0].id, &hDevice) );
 
+#ifdef DEVELOPER_MODE
+    LOGD("=== Enter Developer Mode");
+    ASSERT_OK(TYEnterDeveloperMode(hDevice));
+#endif
+
     LOGD("=== Configure components, open depth cam");
     int32_t componentIDs = TY_COMPONENT_DEPTH_CAM;
     ASSERT_OK( TYEnableComponents(hDevice, componentIDs) );
@@ -143,6 +148,10 @@ int main()
         }
 
         frameHandler(&frame, &cb_data);
+
+#ifdef DEVELOPER_MODE
+        DEVELOPER_MODE_PRINT();
+#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

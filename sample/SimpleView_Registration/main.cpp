@@ -142,6 +142,11 @@ int main(int argc, char* argv[])
         ASSERT_OK( TYOpenDevice(ID, &hDevice) );
     }
 
+#ifdef DEVELOPER_MODE
+    LOGD("=== Enter Developer Mode");
+    ASSERT_OK(TYEnterDeveloperMode(hDevice));
+#endif
+
     int32_t allComps;
     ASSERT_OK( TYGetComponentIDs(hDevice, &allComps) );
     if(!(allComps & TY_COMPONENT_RGB_CAM)){
@@ -219,6 +224,10 @@ int main(int argc, char* argv[])
         } else {
             handleFrame(&frame, &cb_data);
         }
+
+#ifdef DEVELOPER_MODE
+        DEVELOPER_MODE_PRINT();
+#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );
