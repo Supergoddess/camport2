@@ -1,0 +1,70 @@
+[OPTIONS]
+Compatibility=1.1
+Full-text search=Yes
+Contents file=index.hhc
+Default Window=main
+Default topic=index.html
+Index file=index.hhk
+Language=0x409 English (United States)
+Title=Percipio Camport SDK
+
+[WINDOWS]
+main="Percipio Camport SDK","index.hhc","index.hhk","index.html","index.html",,,,,0x23520,,0x10387e,,,,,,,,0
+
+[FILES]
+TY__API_8h_source.html
+TY__API_8h.html
+structTY__CAMERA__DISTORTION.html
+structTY__CAMERA__DISTORTION-members.html
+structTY__CAMERA__EXTRINSIC.html
+structTY__CAMERA__EXTRINSIC-members.html
+structTY__CAMERA__INTRINSIC.html
+structTY__CAMERA__INTRINSIC-members.html
+structTY__DEVICE__BASE__INFO.html
+structTY__DEVICE__BASE__INFO-members.html
+structTY__DEVICE__NET__INFO.html
+structTY__DEVICE__NET__INFO-members.html
+structTY__ENUM__ENTRY.html
+structTY__ENUM__ENTRY-members.html
+structTY__EVENT__INFO.html
+structTY__EVENT__INFO-members.html
+structTY__FEATURE__INFO.html
+structTY__FEATURE__INFO-members.html
+structTY__FLOAT__RANGE.html
+structTY__FLOAT__RANGE-members.html
+structTY__FRAME__DATA.html
+structTY__FRAME__DATA-members.html
+structTY__IMAGE__DATA.html
+structTY__IMAGE__DATA-members.html
+structTY__INT__RANGE.html
+structTY__INT__RANGE-members.html
+structTY__TRIGGER__MODE.html
+structTY__TRIGGER__MODE-members.html
+structTY__VECT__3F.html
+structTY__VECT__3F-members.html
+structTY__VERSION__INFO.html
+structTY__VERSION__INFO-members.html
+dir_13e138d54eb8818da29c3992edef070a.html
+index.html
+annotated.html
+classes.html
+functions.html
+functions_vars.html
+files.html
+globals.html
+globals_func.html
+globals_enum.html
+globals_eval.html
+tab_a.png
+tab_b.png
+tab_h.png
+tab_s.png
+nav_h.png
+nav_f.png
+bc_s.png
+doxygen.png
+closed.png
+open.png
+bdwn.png
+sync_on.png
+sync_off.png
