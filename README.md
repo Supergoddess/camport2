@@ -4,12 +4,12 @@
 
 This is a basic reference template for PERCIPIO depth camera application developers.
 
-This software development kit provides the data capture libraries of PERCIPIO depth camera for different OS platform and several reference applications.The applications here show the way to get depth data, 3D point cloud data, color data or IR-grey data from the PERCIPIO's depth camera with PERCIPIO data capture APIs and render these data in GUI with OpenCV2.4.8 software library.
+This software development kit provides the data capture libraries of PERCIPIO depth camera for different OS platform and several reference applications.The applications here show the way to get depth data, 3D point cloud data, color data or IR-grey data from the PERCIPIO's depth camera with PERCIPIO data capture APIs and to render these data in GUI with OpenCV2.4.8 software library. OpenCV library is NOT necessary to pull the depth data or 2D image out of the PERCIPIO depth data.
 
 
 ## sample directory ##
 
-The sample directory includes source code of the reference applications and exe bianry file. Remember to install the Opencv2.4.8 releated packages before running the exe file.
+The sample directory includes source code of the reference applications and exe bianry file. Remember to install the Opencv2.4.8 releated packages before running the exe file since the samples use it to render the image.
 
 ## lib directory ##
 
@@ -38,8 +38,8 @@ Second, copy the libtycam.so for target platform to /usr/lib directory, and excu
 Then run the following commands to compile in sample directory,
 
     1、cd sample
-	2、mkdir build
-	3、cd build
+    2、mkdir build
+    3、cd build
     4、cmake ..
     5、make
 
