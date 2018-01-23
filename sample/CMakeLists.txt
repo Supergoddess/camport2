@@ -8,6 +8,10 @@ set(ALL_SAMPLES
     SimpleView_Registration
     SimpleView_TriggerMode
     SimpleView_FetchHisto
+    SimpleView_TriggerMode0
+    SimpleView_TriggerMode1
+    SimpleView_TriggerMode_M2S1
+    SimpleView_TriggerMode_M3S1
     )
 
 set(SAMPLES_USED_PCL
