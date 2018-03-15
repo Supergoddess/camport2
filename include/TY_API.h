@@ -7,7 +7,7 @@
 
 // README:
 //------------------------------------------------------------------------------
-//   
+//
 // Depth camera, called "device", consists of several components. Each component
 // is a hardware module or virtual module, such as RGB sensor, depth sensor.
 // Each component has its own features, such as image resolution, pixel format.
@@ -17,7 +17,7 @@
 //
 // Each frame consists of several images. Normally, all the images have identical
 // timestamp, means they are captured at the same time.
-// 
+//
 //------------------------------------------------------------------------------
 
 #ifndef TY_API_H_
@@ -33,7 +33,7 @@
 #endif
 
 #ifdef _WIN32
-# ifndef _STDINT_H 
+# ifndef _STDINT_H
 #  if defined(_MSC_VER) && _MSC_VER < 1600
     typedef __int8            int8_t;
     typedef __int16           int16_t;
@@ -46,7 +46,7 @@
 #  else
 #   include <stdint.h>
 #  endif
-# endif 
+# endif
 #else
 # include <stdint.h>
 #endif
@@ -80,8 +80,8 @@
 #    define TY_STDC         __attribute__((stdcall))
 #    define TY_CDEC         __attribute__((cdecl))
 #  else
-#    define TY_STDC 
-#    define TY_CDEC 
+#    define TY_STDC
+#    define TY_CDEC
 #  endif
 #endif
 
@@ -102,8 +102,8 @@
 //  Definitions
 //------------------------------------------------------------------------------
 #define TY_LIB_VERSION_MAJOR       2
-#define TY_LIB_VERSION_MINOR       6 
-#define TY_LIB_VERSION_PATCH       3 
+#define TY_LIB_VERSION_MINOR       6
+#define TY_LIB_VERSION_PATCH       5 
 
 
 //------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ typedef enum TY_DEVICE_COMPONENT_LIST
     TY_COMPONENT_RGB_CAM_RIGHT  = 0x00200000, ///< Right RGB camera
     TY_COMPONENT_LASER          = 0x00400000, ///< Laser
     TY_COMPONENT_IMU            = 0x00800000, ///< Inertial Measurement Unit
-    TY_COMPONENT_BRIGHT_HISTO   = 0x01000000, ///< virtual component for brightness histogram of ir 
+    TY_COMPONENT_BRIGHT_HISTO   = 0x01000000, ///< virtual component for brightness histogram of ir
 
     TY_COMPONENT_RGB_CAM        = TY_COMPONENT_RGB_CAM_LEFT /// Some device has only one RGB camera, map it to left
 }TY_DEVICE_COMPONENT_LIST;
@@ -213,17 +213,17 @@ typedef enum TY_FEATURE_ID_LIST
     TY_INT_GAIN                 = 0x303 | TY_FEATURE_INT,  ///< Gain
     TY_BOOL_AUTO_AWB            = 0x304 | TY_FEATURE_BOOL, ///< Auto white balance
 
-    TY_INT_LASER_POWER          = 0x500 | TY_FEATURE_INT,  ///< Laser power level 
+    TY_INT_LASER_POWER          = 0x500 | TY_FEATURE_INT,  ///< Laser power level
     TY_BOOL_LASER_AUTO_CTRL     = 0x501 | TY_FEATURE_BOOL,  ///< Laser auto ctrl
 
     TY_BOOL_UNDISTORTION        = 0x510 | TY_FEATURE_BOOL, ///< Output undistorted image
-    TY_BOOL_BRIGHTNESS_HISTOGRAM    = 0x511 | TY_FEATURE_BOOL, ///< Output bright histogram 
+    TY_BOOL_BRIGHTNESS_HISTOGRAM    = 0x511 | TY_FEATURE_BOOL, ///< Output bright histogram
 
     TY_INT_R_GAIN               = 0x520 | TY_FEATURE_INT,  ///< Gain of R channel
     TY_INT_G_GAIN               = 0x521 | TY_FEATURE_INT,  ///< Gain of G channel
     TY_INT_B_GAIN               = 0x522 | TY_FEATURE_INT,  ///< Gain of B channel
-    
-    TY_STRUCT_WORK_MODE      = 0x523 | TY_FEATURE_STRUCT,  ///< mode of trigger 
+
+    TY_STRUCT_WORK_MODE      = 0x523 | TY_FEATURE_STRUCT,  ///< mode of trigger
 
 }TY_FEATURE_ID_LIST;
 typedef int32_t TY_FEATURE_ID;
@@ -231,10 +231,11 @@ typedef int32_t TY_FEATURE_ID;
 
 typedef enum TY_IMAGE_MODE_LIST
 {
+    TY_IMAGE_MODE_160x120       = (160<<12)+120, ///< 655480 
     TY_IMAGE_MODE_320x240       = (320<<12)+240, ///< 1310960
     TY_IMAGE_MODE_640x480       = (640<<12)+480, ///< 2621920
     TY_IMAGE_MODE_1280x960      = (1280<<12)+960,///< 5243840
-    TY_IMAGE_MODE_2592x1944     = (2592<<12)+1944,///< 10618776 
+    TY_IMAGE_MODE_2592x1944     = (2592<<12)+1944,///< 10618776
 }TY_IMAGE_MODE_LIST;
 typedef int32_t TY_IMAGE_MODE;
 
@@ -282,7 +283,7 @@ typedef enum TY_PIXEL_BITS_LIST{
     TY_PIXEL_32BIT              = 0x00200000,
     TY_PIXEL_96BIT              = 0x00600000,
 }TY_PIXEL_BITS_LIST;
-                                             
+
 
 typedef enum TY_PIXEL_FORMAT_LIST
 {
@@ -330,7 +331,7 @@ typedef struct TY_DEVICE_BASE_INFO
 {
     TY_INTERFACE        devInterface;       ///< interface, see TY_INTERFACE_LIST
     char                id[32];
-    char                vendorName[32];     
+    char                vendorName[32];
     char                modelName[32];
     TY_VERSION_INFO     hardwareVersion;
     TY_VERSION_INFO     firmwareVersion;
@@ -434,7 +435,7 @@ typedef struct TY_IMAGE_DATA
 typedef struct TY_FRAME_DATA
 {
     void*           userBuffer;     ///< Pointer to user enqueued buffer, user should enqueue this buffer in the end of callback
-    int32_t         bufferSize;     ///< Size of userBuffer 
+    int32_t         bufferSize;     ///< Size of userBuffer
     int32_t         validCount;     ///< Number of valid data
     int32_t         reserved[6];    ///< Reserved
     TY_IMAGE_DATA   image[10];      ///< Buffer data, max to 10 images per frame, each buffer data could be an image or something else.
@@ -486,7 +487,7 @@ TY_EXTC TY_EXPORT const char* TY_STDC TYErrorString (TY_STATUS errorID);
 ///   We make this function to be static inline, because we do a version check here.
 ///   Some user may use the mismatched header file and dynamic library, and
 ///   that's quite difficult to locate the error.
-///   
+///
 /// @retval TY_STATUS_OK        Succeed.
 /// @retval TY_STATUS_ERROR     Has been inited.
 static inline TY_STATUS TYInitLib (void);
