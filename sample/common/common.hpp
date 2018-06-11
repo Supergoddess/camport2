@@ -30,7 +30,7 @@
 
 #ifdef _WIN32
 # include <windows.h>
-#include <time.h>
+# include <time.h>
   static inline int32_t getSystemTime()
   {
       SYSTEMTIME wtm;
@@ -45,13 +45,22 @@
       tm. tm_isdst    = -1;
       return mktime(&tm) * 1000 + wtm.wMilliseconds;
   }
+  static inline void MSleep(uint32_t ms)
+  {
+      Sleep(ms);
+  }
 #else
 # include <sys/time.h>
+# include <unistd.h>
   inline int32_t getSystemTime()
   {
       struct timeval tv;
       gettimeofday(&tv, NULL);
       return tv.tv_sec*1000 + tv.tv_usec/1000;
+  }
+  static inline void MSleep(uint32_t ms)
+  {
+      usleep(ms * 1000);
   }
 #endif
 
@@ -81,25 +90,6 @@
 #  include <sys/time.h>
 #  define MSLEEP(x)     usleep((x)*1000)
 #endif
-
-// Please undefine this macro in the final product
-#define DEVELOPER_MODE
-
-#define DEVELOPER_MODE_PRINT() do { \
-    static int32_t last_warning_time = getSystemTime(); \
-    if (getSystemTime() - last_warning_time > 5000) { \
-      printf("\n\n**********************************************************************\n"); \
-      printf("WARNING:\n"); \
-      printf("    Your device has been set to DEVELOPER mode by TYEnterDeveloperMode.\n"); \
-      printf("\n"); \
-      printf("    For convenience of your debug, \n"); \
-      printf("    We disable some features and may affect the stability of the device.\n"); \
-      printf("\n"); \
-      printf("    Undefine macro DEVELOPER_MODE in your final product!\n"); \
-      printf("**********************************************************************\n\n"); \
-      last_warning_time = getSystemTime(); \
-    } \
-  }while(0) 
 
 #include "Utils.hpp"
 #include "DepthRender.hpp"

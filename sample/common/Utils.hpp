@@ -15,6 +15,7 @@ static inline const char* colorFormatName(TY_PIXEL_FORMAT fmt)
         FORMAT_CASE(TY_PIXEL_FORMAT_YUYV);
         FORMAT_CASE(TY_PIXEL_FORMAT_DEPTH16);
         FORMAT_CASE(TY_PIXEL_FORMAT_FPOINT3D);
+        FORMAT_CASE(TY_PIXEL_FORMAT_BAYER8GB);
         default: return "UNKNOWN FORMAT";
     }
 #undef FORMAT_CASE
@@ -77,6 +78,10 @@ static inline int parseFrame(const TY_FRAME_DATA& frame, cv::Mat* pDepth
                 cv::Mat gray(frame.image[i].height, frame.image[i].width
                         , CV_8U, frame.image[i].buffer);
                 cv::cvtColor(gray, *pColor, cv::COLOR_GRAY2BGR);
+             } else if(frame.image[i].pixelFormat == TY_PIXEL_FORMAT_BAYER8GB){
+                cv::Mat raw(frame.image[i].height, frame.image[i].width
+                        , CV_8U, frame.image[i].buffer);
+                cv::cvtColor(raw, *pColor, cv::COLOR_BayerGB2BGR);
             }
         }
         // get point3D

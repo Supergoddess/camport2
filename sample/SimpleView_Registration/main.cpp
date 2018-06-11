@@ -96,6 +96,19 @@ void handleFrame(TY_FRAME_DATA* frame, void* userdata)
     ASSERT_OK( TYEnqueueBuffer(pData->hDevice, frame->userBuffer, frame->bufferSize) );
 }
 
+void eventCallback(TY_EVENT_INFO *event_info, void *userdata)
+{
+    if (event_info->eventId == TY_EVENT_DEVICE_OFFLINE) {
+        LOGD("=== Event Callback: Device Offline!");
+        // Note: 
+        //     Please set TY_BOOL_KEEP_ALIVE_ONOFF feature to false if you need to debug with breakpoint!
+    }
+    else if (event_info->eventId == TY_EVENT_LICENSE_ERROR) {
+        LOGD("=== Event Callback: License Error!");
+    }
+}
+
+
 int main(int argc, char* argv[])
 {
     const char* IP = NULL;
@@ -142,11 +155,6 @@ int main(int argc, char* argv[])
         ASSERT_OK( TYOpenDevice(ID, &hDevice) );
     }
 
-#ifdef DEVELOPER_MODE
-    LOGD("=== Enter Developer Mode");
-    ASSERT_OK(TYEnterDeveloperMode(hDevice));
-#endif
-
     int32_t allComps;
     ASSERT_OK( TYGetComponentIDs(hDevice, &allComps) );
     if(!(allComps & TY_COMPONENT_RGB_CAM)){
@@ -184,6 +192,11 @@ int main(int argc, char* argv[])
     cb_data.hDevice = hDevice;
     cb_data.render = &render;
     // ASSERT_OK( TYRegisterCallback(hDevice, frameCallback, &cb_data) );
+
+    LOGD("=== Register event callback");
+    LOGD("Note: Callback may block internal data receiving,");
+    LOGD("      so that user should not do long time work in callback.");
+    ASSERT_OK(TYRegisterEventCallback(hDevice, eventCallback, NULL));
 
     LOGD("=== Disable trigger mode");
     ASSERT_OK( TYSetBool(hDevice, TY_COMPONENT_DEVICE, TY_BOOL_TRIGGER_MODE, false) );
@@ -224,10 +237,6 @@ int main(int argc, char* argv[])
         } else {
             handleFrame(&frame, &cb_data);
         }
-
-#ifdef DEVELOPER_MODE
-        DEVELOPER_MODE_PRINT();
-#endif
     }
 
     ASSERT_OK( TYStopCapture(hDevice) );

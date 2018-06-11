@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 
+#uncomment the following for release version when need to enable PCL
+#option(ENABLE_PCL "Enable PCL" ON)
+
 set(ALL_SAMPLES
+    LoopDetect
     DumpAllFeatures
     SimpleView_Callback
     SimpleView_FetchFrame
@@ -12,6 +16,7 @@ set(ALL_SAMPLES
     SimpleView_TriggerMode1
     SimpleView_TriggerMode_M2S1
     SimpleView_TriggerMode_M3S1
+    SimpleView_KeepAlive
     )
 
 set(SAMPLES_USED_PCL

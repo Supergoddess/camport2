@@ -103,7 +103,7 @@
 //------------------------------------------------------------------------------
 #define TY_LIB_VERSION_MAJOR       2
 #define TY_LIB_VERSION_MINOR       6
-#define TY_LIB_VERSION_PATCH       5 
+#define TY_LIB_VERSION_PATCH       9 
 
 
 //------------------------------------------------------------------------------
@@ -139,6 +139,7 @@ typedef int32_t TY_STATUS;
 typedef enum TY_EVENT_LIST
 {
     TY_EVENT_DEVICE_OFFLINE     = -2001,
+    TY_EVENT_LICENSE_ERROR      = -2002
 }TY_ENENT_LIST;
 typedef int32_t TY_EVENT;
 
@@ -206,6 +207,8 @@ typedef enum TY_FEATURE_ID_LIST
     TY_BOOL_TRIGGER_MODE        = 0x200 | TY_FEATURE_BOOL, ///< Trigger mode switch
     TY_ENUM_TRIGGER_ACTIVATION  = 0x201 | TY_FEATURE_ENUM, ///< Trigger activation, see TY_TRIGGER_ACTIVATION_LIST
     TY_INT_FRAME_PER_TRIGGER    = 0x202 | TY_FEATURE_INT,  ///< Number of frames captured per trigger
+    TY_BOOL_KEEP_ALIVE_ONOFF    = 0x203 | TY_FEATURE_BOOL, ///< Keep Alive switch
+    TY_INT_KEEP_ALIVE_TIMEOUT   = 0x204 | TY_FEATURE_INT,  ///< Keep Alive timeout
 
     TY_BOOL_AUTO_EXPOSURE       = 0x300 | TY_FEATURE_BOOL, ///< Auto exposure switch
     TY_INT_EXPOSURE_TIME        = 0x301 | TY_FEATURE_INT,  ///< Exposure time in percentage
@@ -223,8 +226,10 @@ typedef enum TY_FEATURE_ID_LIST
     TY_INT_G_GAIN               = 0x521 | TY_FEATURE_INT,  ///< Gain of G channel
     TY_INT_B_GAIN               = 0x522 | TY_FEATURE_INT,  ///< Gain of B channel
 
-    TY_STRUCT_WORK_MODE      = 0x523 | TY_FEATURE_STRUCT,  ///< mode of trigger
+    TY_STRUCT_WORK_MODE         = 0x523 | TY_FEATURE_STRUCT,  ///< mode of trigger
 
+    TY_INT_ANALOG_GAIN          = 0x524 | TY_FEATURE_INT,  ///< Analog gain
+    TY_INT_RGB_ANALOG_GAIN      = 0x525 | TY_FEATURE_INT,  ///< RGB Analog gain
 }TY_FEATURE_ID_LIST;
 typedef int32_t TY_FEATURE_ID;
 
@@ -296,6 +301,7 @@ typedef enum TY_PIXEL_FORMAT_LIST
     TY_PIXEL_FORMAT_JPEG        = (TY_PIXEL_COLOR   | TY_PIXEL_24BIT | 0x0013), //0x20180013, JPEG
     TY_PIXEL_FORMAT_DEPTH16     = (TY_PIXEL_DEPTH   | TY_PIXEL_16BIT | 0x0020), //0x30100020
     TY_PIXEL_FORMAT_FPOINT3D    = (TY_PIXEL_POINT3D | TY_PIXEL_96BIT | 0x0030), //0x40600030
+    TY_PIXEL_FORMAT_BAYER8GB         = (TY_PIXEL_MONO    | TY_PIXEL_8BIT  | 0x0090), //0x10080090
 }TY_PIXEL_FORMAT_LIST;
 typedef int32_t TY_PIXEL_FORMAT;
 
@@ -550,14 +556,6 @@ TY_CAPI TYOpenDeviceWithIP        (const char* IP, TY_DEV_HANDLE* deviceHandle);
 /// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
 /// @retval TY_STATUS_IDLE              Device has been closed.
 TY_CAPI TYCloseDevice             (TY_DEV_HANDLE hDevice);
-
-/// @brief Enable developer mode by device handle.
-/// @param  [in]  hDevice       Device handle.
-/// @retval TY_STATUS_OK        Succeed.
-/// @retval TY_STATUS_INVALID_HANDLE    Invalid device handle.
-/// @retval TY_STATUS_DEVICE_ERROR      Enter developer mode failed.
-TY_CAPI TYEnterDeveloperMode      (TY_DEV_HANDLE hDevice);
-
 
 /// @brief Get base info of the open device.
 /// @param  [in]  hDevice       Device handle.
@@ -1042,7 +1040,6 @@ TY_CAPI             TYGetDeviceList           (TY_DEVICE_BASE_INFO* deviceInfos,
 TY_CAPI             TYOpenDevice              (const char* deviceID, TY_DEV_HANDLE* outDeviceHandle);
 TY_CAPI             TYOpenDeviceWithIP        (const char* IP, TY_DEV_HANDLE* outDeviceHandle);
 TY_CAPI             TYCloseDevice             (TY_DEV_HANDLE hDevice);
-TY_CAPI             TYEnterDeveloperMode      (TY_DEV_HANDLE hDevice);
 
 TY_CAPI             TYGetDeviceInfo           (TY_DEV_HANDLE hDevice, TY_DEVICE_BASE_INFO* info);
 TY_CAPI             TYGetComponentIDs         (TY_DEV_HANDLE hDevice, int32_t* componentIDs);

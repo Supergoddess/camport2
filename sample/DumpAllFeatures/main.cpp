@@ -85,6 +85,14 @@ void dumpFeature(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID, TY_FEATURE_ID fea
                     LOGD("===%23s%f %f %f %f", "", p->data[8], p->data[9], p->data[10], p->data[11]);
                     return;
                 }
+                case TY_STRUCT_WORK_MODE: {
+                    TY_TRIGGER_MODE* p = (TY_TRIGGER_MODE*)buffer;
+                    ASSERT_OK(TYGetStruct(handle, compID, featID, (void*)p
+                                , sizeof(TY_TRIGGER_MODE)));
+                    LOGD("===         %14s: mode(%d) fps(%d)", "", p->mode, p->fps);
+
+                    return;
+                }
                 default:
                     LOGD("===         %s: Unknown struct", name);
                     return;
@@ -101,6 +109,7 @@ void dumpComponentFeatures(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID)
     DUMP_FEATURE(handle, compID, TY_STRUCT_EXTRINSIC_TO_LEFT_IR );
     DUMP_FEATURE(handle, compID, TY_STRUCT_EXTRINSIC_TO_LEFT_RGB );
     DUMP_FEATURE(handle, compID, TY_STRUCT_CAM_DISTORTION);
+    DUMP_FEATURE(handle, compID, TY_STRUCT_WORK_MODE);
 
     DUMP_FEATURE(handle, compID, TY_INT_WIDTH_MAX);
     DUMP_FEATURE(handle, compID, TY_INT_HEIGHT_MAX);
@@ -115,6 +124,8 @@ void dumpComponentFeatures(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID)
     DUMP_FEATURE(handle, compID, TY_BOOL_TRIGGER_MODE);
     DUMP_FEATURE(handle, compID, TY_ENUM_TRIGGER_ACTIVATION);
     DUMP_FEATURE(handle, compID, TY_INT_FRAME_PER_TRIGGER);
+    DUMP_FEATURE(handle, compID, TY_BOOL_KEEP_ALIVE_ONOFF);
+    DUMP_FEATURE(handle, compID, TY_INT_KEEP_ALIVE_TIMEOUT);
                                                                 
     DUMP_FEATURE(handle, compID, TY_BOOL_AUTO_EXPOSURE);
     DUMP_FEATURE(handle, compID, TY_INT_EXPOSURE_TIME );
@@ -124,6 +135,7 @@ void dumpComponentFeatures(TY_DEV_HANDLE handle, TY_COMPONENT_ID compID)
     DUMP_FEATURE(handle, compID, TY_BOOL_UNDISTORTION);
 
     DUMP_FEATURE(handle, compID, TY_INT_LASER_POWER);
+    DUMP_FEATURE(handle, compID, TY_BOOL_LASER_AUTO_CTRL);
 
     DUMP_FEATURE(handle, compID, TY_INT_R_GAIN);
     DUMP_FEATURE(handle, compID, TY_INT_G_GAIN);

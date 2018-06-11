@@ -76,11 +76,6 @@ int main()
 
         ASSERT_OK( TYOpenDevice(pBaseInfo[i].id, &cams[i].hDev) );
 
-#ifdef DEVELOPER_MODE
-        LOGD("=== Enter Developer Mode");
-        ASSERT_OK(TYEnterDeveloperMode(cams[i].hDev));
-#endif
-
         int32_t allComps;
         ASSERT_OK( TYGetComponentIDs(cams[i].hDev, &allComps) );
         if(0 && allComps & TY_COMPONENT_RGB_CAM){
@@ -143,10 +138,6 @@ int main()
             default:
                 LOGD("Unmapped key %d", key);
         }
-
-#ifdef DEVELOPER_MODE
-        DEVELOPER_MODE_PRINT();
-#endif
     }
 
     for(int i = 0; i < cams.size(); i++){
