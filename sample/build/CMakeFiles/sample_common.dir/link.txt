@@ -1,2 +1,0 @@
-/usr/bin/ar cr libsample_common.a  CMakeFiles/sample_common.dir/common/MatViewer.cpp.o CMakeFiles/sample_common.dir/common/PointCloudViewer.cpp.o
-/usr/bin/ranlib libsample_common.a
