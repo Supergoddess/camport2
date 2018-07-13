@@ -242,6 +242,7 @@ var a00002 =
     [ "TYRegisterCallback", "a00002.html#af46cb97d1c20252a82bc69ea6f048f4c", null ],
     [ "TYRegisterEventCallback", "a00002.html#a1a413221c79c9516ea90d7252b671076", null ],
     [ "TYRegisterWorldToColor", "a00002.html#a7f34fa882bcdecf3bd969109f6a5e4a7", null ],
+    [ "TYRegisterWorldToColor2", "a00002.html#adbb06ef7c73a8f7390e88007bf82ebe2", null ],
     [ "TYSendSoftTrigger", "a00002.html#afd5565df7f7b9387bfd267a0d749530e", null ],
     [ "TYSetBool", "a00002.html#a34265b26ff5c00dc958a7b0b191d3dd0", null ],
     [ "TYSetEnum", "a00002.html#ad0f81735e6eecda1703c181660d65a25", null ],

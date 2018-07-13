@@ -103,7 +103,7 @@
 //------------------------------------------------------------------------------
 #define TY_LIB_VERSION_MAJOR       2
 #define TY_LIB_VERSION_MINOR       6
-#define TY_LIB_VERSION_PATCH       9 
+#define TY_LIB_VERSION_PATCH       10 
 
 
 //------------------------------------------------------------------------------
@@ -1083,6 +1083,7 @@ TY_CAPI             TYDepthToWorld            (TY_DEV_HANDLE hDevice, const TY_V
 TY_CAPI             TYWorldToDepth            (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, TY_VECT_3F* depth, int32_t worldPaddingBytes, int32_t pointCount);
 
 TY_CAPI             TYRegisterWorldToColor    (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount, uint16_t* outDepthBuffer, int32_t bufferSize);
+TY_CAPI             TYRegisterWorldToColor2   (TY_DEV_HANDLE hDevice, const TY_VECT_3F* world, int32_t worldPaddingBytes, int32_t pointCount, int32_t color_width, int32_t color_height, uint16_t* outDepthBuffer, int32_t bufferSize);
 TY_CAPI             TYUndistortImage          (const TY_CAMERA_INTRINSIC *cameraIntrinsic, const TY_CAMERA_DISTORTION* cameraDistortion,const TY_CAMERA_INTRINSIC *cameraNewIntrinsic,const TY_IMAGE_DATA *srcImage, TY_IMAGE_DATA *dstImage);
 
 

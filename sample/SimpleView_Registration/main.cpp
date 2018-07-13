@@ -54,8 +54,8 @@ void handleFrame(TY_FRAME_DATA* frame, void* userdata)
     // do Registration
     cv::Mat newDepth;
     if(!point3D.empty() && !color.empty()) {
-        ASSERT_OK( TYRegisterWorldToColor(pData->hDevice, (TY_VECT_3F*)point3D.data, 0
-                    , point3D.cols * point3D.rows, (uint16_t*)buffer, sizeof(buffer)
+        ASSERT_OK( TYRegisterWorldToColor2(pData->hDevice, (TY_VECT_3F*)point3D.data, 0
+                    , point3D.cols * point3D.rows, color.cols, color.rows, (uint16_t*)buffer, sizeof(buffer)
                     ));
         newDepth = cv::Mat(color.rows, color.cols, CV_16U, (uint16_t*)buffer);
         cv::Mat resized_color;

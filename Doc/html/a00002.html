@@ -196,7 +196,7 @@ Macros</h2></td></tr>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>TY_LIB_VERSION_MINOR</b>&#160;&#160;&#160;6</td></tr>
 <tr class="separator:ab7b51d30017169eef553363a27bafa4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93ec4ddd20d2a3ac85e1d95cc519fe7b"><td class="memItemLeft" align="right" valign="top"><a id="a93ec4ddd20d2a3ac85e1d95cc519fe7b"></a>
-#define&#160;</td><td class="memItemRight" valign="bottom"><b>TY_LIB_VERSION_PATCH</b>&#160;&#160;&#160;9</td></tr>
+#define&#160;</td><td class="memItemRight" valign="bottom"><b>TY_LIB_VERSION_PATCH</b>&#160;&#160;&#160;10</td></tr>
 <tr class="separator:a93ec4ddd20d2a3ac85e1d95cc519fe7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf08d2a1f691c0b63fef25af19662072"><td class="memItemLeft" align="right" valign="top"><a id="aaf08d2a1f691c0b63fef25af19662072"></a>
 #define&#160;</td><td class="memItemRight" valign="bottom"><b>TY_CAPI</b>&#160;&#160;&#160;TY_EXTC TY_EXPORT TY_STATUS TY_STDC</td></tr>
@@ -639,6 +639,9 @@ TY_CAPI&#160;</td><td class="memItemRight" valign="bottom"><b>TYGetStringLength<
 <tr class="memitem:a7f34fa882bcdecf3bd969109f6a5e4a7"><td class="memItemLeft" align="right" valign="top"><a id="a7f34fa882bcdecf3bd969109f6a5e4a7"></a>
 TY_CAPI&#160;</td><td class="memItemRight" valign="bottom"><b>TYRegisterWorldToColor</b> (TY_DEV_HANDLE hDevice, const <a class="el" href="a00039.html">TY_VECT_3F</a> *world, int32_t worldPaddingBytes, int32_t pointCount, uint16_t *outDepthBuffer, int32_t bufferSize)</td></tr>
 <tr class="separator:a7f34fa882bcdecf3bd969109f6a5e4a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbb06ef7c73a8f7390e88007bf82ebe2"><td class="memItemLeft" align="right" valign="top"><a id="adbb06ef7c73a8f7390e88007bf82ebe2"></a>
+TY_CAPI&#160;</td><td class="memItemRight" valign="bottom"><b>TYRegisterWorldToColor2</b> (TY_DEV_HANDLE hDevice, const <a class="el" href="a00039.html">TY_VECT_3F</a> *world, int32_t worldPaddingBytes, int32_t pointCount, int32_t color_width, int32_t color_height, uint16_t *outDepthBuffer, int32_t bufferSize)</td></tr>
+<tr class="separator:adbb06ef7c73a8f7390e88007bf82ebe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>API for Percipio depth cameras. </p>
