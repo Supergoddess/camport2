@@ -2,6 +2,9 @@
 
 ----------
 
+# The Camport2 version is being deprecated. Please download the latest version of camport3 # 
+
+
 This is a basic reference template for PERCIPIO depth camera application developers.
 
 This software development kit provides the data capture libraries of PERCIPIO depth camera for different OS platform and several reference applications.The applications here show the way to get depth data, 3D point cloud data, color data or IR-grey data from the PERCIPIO's depth camera with PERCIPIO data capture APIs and to render these data in GUI with OpenCV2.4.8 software library. OpenCV library is NOT necessary to pull the depth data or 2D image out of the PERCIPIO depth data.
